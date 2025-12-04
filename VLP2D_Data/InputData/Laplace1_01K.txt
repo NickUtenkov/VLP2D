@@ -1,0 +1,34 @@
+xMax=1
+yMax=1
+segmentsX=1024
+segmentsY=1024
+funcRHS=
+funcLeft=
+funcRight=
+funcTop=
+funcBottom=
+funcBoundary=x^2 - y^2 + 10 * x * y + 10 * x - 10 * y + 1
+funcAnalytic=x^2 - y^2 + 10 * x * y + 10 * x - 10 * y + 1
+
+epsilonSingle=3E-5
+epsilonDouble=5E-13
+epsilonDD128=4E-30
+epsilonQD256=1E-61
+
+SORDouble=4818, 4677, 4080, 3312
+
+SOROCLDouble=4818, 4680, 4080, 3313
+
+SORCUDADouble=4818, 4680, 4080, 3313
+
+MultiGridDouble=9, 8, 7, 6
+MultiGridDD128=19, 19, 18, 17
+MultiGridQD256=38, 38, 37, 36
+
+MultiGridOCLDouble=9, 8, 7, 6
+MultiGridOCLDD128=19, 19, 18, 17
+MultiGridOCLQD256=38, 38, 37, 36
+
+MultiGridCUDADouble=9, 8, 7, 6
+MultiGridCUDADD128=19, 19, 18, 17
+MultiGridCUDAQD256=38, 38, 37, 36

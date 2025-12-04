@@ -1,0 +1,16 @@
+xMax=1
+yMax=1
+segmentsX=16384
+segmentsY=16384
+funcRHS=
+funcLeft=
+funcRight=
+funcTop=
+funcBottom=
+funcBoundary=x^2 - y^2 + 10 * x * y + 10 * x - 10 * y + 1
+funcAnalytic=x^2 - y^2 + 10 * x * y + 10 * x - 10 * y + 1
+
+epsilonSingle=3E-5
+epsilonDouble=5E-14
+epsilonDD128=4E-30
+epsilonQD256=1E-61

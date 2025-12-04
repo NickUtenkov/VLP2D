@@ -1,0 +1,36 @@
+xMax=exp(1)
+yMax=pi(1)
+segmentsX=128
+segmentsY=256
+funcRHS=-4
+funcBoundary=(x-xMax/2)^2 + (y-yMax/2)^2
+funcAnalytic=(x-xMax/2)^2 + (y-yMax/2)^2
+
+epsilonSingle=3E-5
+epsilonDouble=5E-13
+epsilonDD128=4E-30
+epsilonQD256=1E-61
+
+SimpleIterationSingle=21092, 19134, 19131, 18371
+SimpleIterationDouble=156823, 154964, 154964, 154196
+
+SORDD128=2162, 2155, 2155, 2150
+SORQD256=4435, 4427, 4427, 4424
+
+SOROCLDD128=2162, 2155, 2155, 2151
+SOROCLQD256=4435, 4427, 4427, 4424
+
+SORCUDADD128=2162, 2155, 2155, 2151
+SORCUDAQD256=4435, 4427, 4427, 4424
+
+MultiGridDouble=9, 9, 9, 9
+MultiGridDD128=22, 22, 22, 22
+MultiGridQD256=46, 46, 46, 47
+
+MultiGridOCLDouble=9, 9, 9, 9
+MultiGridOCLDD128=22, 22, 22, 22
+MultiGridOCLQD256=46, 46, 46, 47
+
+MultiGridCUDADouble=9, 9, 9, 9
+MultiGridCUDADD128=22, 22, 22, 22
+MultiGridCUDAQD256=44, 43, 43, 44

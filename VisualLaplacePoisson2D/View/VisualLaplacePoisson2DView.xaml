@@ -1,0 +1,29 @@
+<UserControl x:Class="VLP2D.View.VisualLaplacePoisson2DView"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:inputView="clr-namespace:VLP2D.View"
+	xmlns:outputView="clr-namespace:VLP2D.View"
+	xmlns:loc="clr-namespace:VLP2D.Properties"
+	>
+
+	<Grid Background="White">
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="260"/>
+			<ColumnDefinition Width="*"/>
+		</Grid.ColumnDefinitions>
+		<StackPanel Grid.Column="0">
+			<!-- Parameters -->
+			<inputView:VLPRectangleInputView x:Name="VLPRectangleInputView" Margin="5,5,0,0"/>
+		</StackPanel>
+		<!-- Results -->
+		<!-- Using Grid to utilize all remaining height and width -->
+		<Grid Grid.Column="1">
+			<Grid.RowDefinitions>
+				<RowDefinition Height="25"/>
+				<RowDefinition Height="*"/>
+			</Grid.RowDefinitions>
+			<TextBlock Grid.Row="0" Text="{x:Static loc:Resources.strResults}" FontSize="18" IsHitTestVisible="false" HorizontalAlignment="Center"/>
+			<outputView:VLPRectangleOutputView Grid.Row="1" x:Name="VLPRectangleOutputView"/>
+		</Grid>
+	</Grid>
+</UserControl>

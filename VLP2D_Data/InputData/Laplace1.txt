@@ -1,0 +1,36 @@
+xMax=1
+yMax=1
+segmentsX=200
+segmentsY=200
+funcRHS=
+funcLeft=
+funcRight=
+funcTop=
+funcBottom=
+funcBoundary=x^2 - y^2 + 10 * x * y + 10 * x - 10 * y + 1
+funcAnalytic=x^2 - y^2 + 10 * x * y + 10 * x - 10 * y + 1
+
+epsilonSingle=3E-5
+epsilonDouble=5E-14
+epsilonDD128=4E-30
+epsilonQD256=1E-61
+
+SimpleIterationSingle=23263, 11861, 1032, 153
+SimpleIterationDouble=186657, 77264, 33661, 35407
+SimpleIterationDD128=498900, 202476, 170673, 166986
+SimpleIterationQD256=998900, 502476, 370673, 366986
+
+SORSingle=407, 377, 262, 150
+SORDouble=1064, 1047, 924, 808
+SORDD128=5033, 2279, 2331, 2134
+SORQD256=4715, 4643, 4522, 4420
+
+ConjugateGradientSingle=455, 338, 136, 83
+ConjugateGradientDouble=825, 721, 507, 460
+ConjugateGradientDD128=1253, 1146, 896, 1052
+ConjugateGradientQD256=1837, 1731, 1715, 1710
+
+MultiGridSingle=4, 4, 3, 2
+MultiGridDouble=9, 9, 8, 7
+MultiGridDD128=19, 19, 18, 17
+MultiGridQD256=38, 38, 37, 36

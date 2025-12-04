@@ -1,0 +1,189 @@
+<UserControl x:Class="VLP2D.View.VLPRectangleInputView"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+	xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+	xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+	xmlns:Behaviors="clr-namespace:VLP2D.Common"
+	xmlns:ViewModel="clr-namespace:VLP2D.ViewModel"
+	xmlns:local="clr-namespace:VLP2D.View"
+	xmlns:local2="clr-namespace:VLP2D.Model"
+	xmlns:loc="clr-namespace:VLP2D.Properties"
+	mc:Ignorable="d" 
+	d:DesignHeight="300" d:DesignWidth="300">
+
+	<UserControl.DataContext>
+		<ViewModel:VLPRectangleInputVM/>
+	</UserControl.DataContext>
+
+	<UserControl.Resources>
+		<DataTemplate x:Key="interpolItemTemplate">
+			<TextBlock Text="{Binding }" FontSize="15"/>
+		</DataTemplate>
+		<DataTemplate x:Key="schemeItemTemplate">
+			<TextBlock Text="{Binding }" FontSize="15"/>
+		</DataTemplate>
+		<DataTemplate x:Key="OCLDeviceItemTemplate">
+			<TextBlock Text="{Binding name}" FontSize="15"/>
+		</DataTemplate>
+        <DataTemplate x:Key="CUDADeviceItemTemplate">
+            <TextBlock Text="{Binding name}" FontSize="15"/>
+        </DataTemplate>
+		<DataTemplate x:Key="PrecisionItemTemplate">
+			<TextBlock Text="{Binding }" FontSize="15"/>
+		</DataTemplate>
+    </UserControl.Resources>
+
+	<StackPanel>
+		<TextBlock Text="{x:Static loc:Resources.strTask}" FontSize="15" HorizontalAlignment="Center"/>
+			<ComboBox SelectedIndex="{Binding taskSelectedIndex}" Style="{StaticResource resComboStyleWidth245}" Margin="0,3,0,0"
+			ItemTemplate="{StaticResource taskItemTemplate}"
+			ItemsSource="{Binding listParams, UpdateSourceTrigger=PropertyChanged}"
+			>
+			</ComboBox>
+		<TextBlock Text="{x:Static loc:Resources.strInterpol}" FontSize="15" HorizontalAlignment="Center"
+			Visibility="{Binding Path=showInterpolation, Converter={StaticResource BoolToVisibilityConverterKey}}"
+		/>
+		<ComboBox SelectedIndex="{Binding interpolationIndex,Converter={StaticResource EnumConverterKey},ConverterParameter={x:Type local2:InterpolationEnumVLPRectangle}}" Style="{StaticResource resComboStyleWidth245}" Margin="0,3,0,0"
+			ItemTemplate="{StaticResource interpolItemTemplate}"
+			ItemsSource="{Binding listInterpolations, UpdateSourceTrigger=PropertyChanged}"
+			Visibility="{Binding Path=showInterpolation, Converter={StaticResource BoolToVisibilityConverterKey}}"
+			>
+		</ComboBox>
+
+		<TextBlock Text="{x:Static loc:Resources.strMethodOrScheme}" FontSize="15" HorizontalAlignment="Center"/>
+		<ComboBox SelectedIndex="{Binding schemeCPUIndex,Converter={StaticResource EnumConverterKey},ConverterParameter={x:Type local2:SchemeCPUEnum}}" Style="{StaticResource resComboStyleWidth245}" Margin="0,3,0,0"
+			ItemTemplate="{StaticResource schemeItemTemplate}"
+			ItemsSource="{Binding listCPUSchemes, UpdateSourceTrigger=PropertyChanged}"
+			MaxDropDownHeight="408"
+			>
+			<ComboBox.Visibility>
+				<MultiBinding Converter="{StaticResource MultiBoolToNoVisibilityConverterKey}">
+					<Binding Path="isOpenCLCheckBoxChecked" />
+					<Binding Path="isCUDACheckBoxChecked" />
+				</MultiBinding>
+			</ComboBox.Visibility>
+		</ComboBox>
+		<ComboBox SelectedIndex="{Binding schemeOCLIndex,Converter={StaticResource EnumConverterKey},ConverterParameter={x:Type local2:SchemeOCLEnum}}" Style="{StaticResource resComboStyleWidth245}" Margin="0,3,0,0"
+			ItemTemplate="{StaticResource schemeItemTemplate}"
+			ItemsSource="{Binding listOCLSchemes, UpdateSourceTrigger=PropertyChanged}"
+			MaxDropDownHeight="408"
+			Visibility="{Binding Path=isOpenCLCheckBoxChecked, Converter={StaticResource BoolToVisibilityConverterKey}}"
+			>
+		</ComboBox>
+		<ComboBox SelectedIndex="{Binding schemeCUDAIndex,Converter={StaticResource EnumConverterKey},ConverterParameter={x:Type local2:SchemeCUDAEnum}}" Style="{StaticResource resComboStyleWidth245}" Margin="0,3,0,0"
+			ItemTemplate="{StaticResource schemeItemTemplate}"
+			ItemsSource="{Binding listCUDASchemes, UpdateSourceTrigger=PropertyChanged}"
+			MaxDropDownHeight="408"
+			Visibility="{Binding Path=isCUDACheckBoxChecked, Converter={StaticResource BoolToVisibilityConverterKey}}"
+			>
+		</ComboBox>
+
+		<TextBlock Text="{x:Static loc:Resources.strIterationsCount}" FontSize="15" HorizontalAlignment="Center" Margin="0,3,0,0"
+			Visibility="{Binding Path=isDirectOrFixedIterationsMethod, Converter={StaticResource BoolToNoVisibilityConverterKey}}"
+		/>
+		<TextBox MaxLength="10" FontSize="15" Width="245"
+			Visibility="{Binding Path=isDirectOrFixedIterationsMethod, Converter={StaticResource BoolToNoVisibilityConverterKey}}"
+			Text="{Binding countIterations, Mode=TwoWay, Converter={StaticResource IntToStringConverterKey}, StringFormat={}{0:0}, UpdateSourceTrigger=PropertyChanged}"
+		>
+		</TextBox>
+
+		<CheckBox IsChecked="{Binding isVisualization}" Content="{x:Static loc:Resources.strVisualization}" Style="{StaticResource checkBoxStyle}" HorizontalAlignment="Left" Margin="0,3,0,0"/>
+
+		<StackPanel Visibility="{Binding Path=isStepVisible, Converter={StaticResource BoolToVisibilityConverterKey}}">
+			<StackPanel Orientation="Horizontal">
+				<TextBlock Text="{x:Static loc:Resources.strStepViz}" FontSize="15" HorizontalAlignment="Left" Margin="20,0,0,0"/>
+				<TextBlock Text="{x:Static loc:Resources.strHeatMapsCount}" FontSize="15" Width="162" HorizontalAlignment="Right" Margin="40,0,0,0"/>
+			</StackPanel>
+			<StackPanel Orientation="Horizontal">
+				<TextBox MaxLength="10" FontSize="15" Width="70"
+					Text="{Binding stepVis, Mode=TwoWay, Converter={StaticResource IntToStringConverterKey},StringFormat={}{0:0}, UpdateSourceTrigger=PropertyChanged}"
+				>
+				</TextBox>
+				<TextBlock FontSize="15" Width="123"  Margin="90,0,0,0"
+					Text="{Binding countHeatMaps, StringFormat={}{0:0}, UpdateSourceTrigger=PropertyChanged}"
+				>
+				</TextBlock >
+			</StackPanel>
+		</StackPanel>
+
+		<CheckBox IsChecked="{Binding isSavingGIF}" Content="{x:Static loc:Resources.strSavingGIF}" Style="{StaticResource checkBoxStyle}" HorizontalAlignment="Left" Margin="0,3,0,0"/>
+		<CheckBox IsChecked="{Binding isMultiThread}" Content="{x:Static loc:Resources.strMultithreading}" Style="{StaticResource checkBoxStyle}" HorizontalAlignment="Left" Margin="0,3,0,0"
+			Visibility="{Binding Path=showMultiThread, Converter={StaticResource BoolToVisibilityConverterKey}}"
+		/>
+		<CheckBox IsChecked="{Binding isChebysh}" Content="{x:Static loc:Resources.strChebishBoost}" Style="{StaticResource checkBoxStyle}" HorizontalAlignment="Left" Margin="0,3,0,0"
+			Visibility="{Binding Path=showChebysh, Converter={StaticResource BoolToVisibilityConverterKey}}"
+		/>
+		<CheckBox IsChecked="{Binding isJordan}" Content="{x:Static loc:Resources.strJordanBoost}" Style="{StaticResource checkBoxStyle}" HorizontalAlignment="Left" Margin="0,3,0,0"
+			Visibility="{Binding Path=showJordan, Converter={StaticResource BoolToVisibilityConverterKey}}"
+		/>
+		<CheckBox IsChecked="{Binding isBiconjugateStabilized}" Content="{x:Static loc:Resources.strStabilized}" Style="{StaticResource checkBoxStyle}" HorizontalAlignment="Left" Margin="0,3,0,0"
+			Visibility="{Binding Path=showBiconjugateStabilized, Converter={StaticResource BoolToVisibilityConverterKey}}"
+		/>
+		<CheckBox IsChecked="{Binding isVarSepProgonka}" Content="{x:Static loc:Resources.strProgonka}" Style="{StaticResource checkBoxStyle}" HorizontalAlignment="Left" Margin="0,3,0,0"
+			Visibility="{Binding Path=showVarSepProgonka, Converter={StaticResource BoolToVisibilityConverterKey}}"
+		/>
+		<TextBlock Text="{x:Static loc:Resources.strMethod}" FontSize="15" HorizontalAlignment="Center"
+			Visibility="{Binding Path=showMethodHeader, Converter={StaticResource BoolToVisibilityConverterKey}}"
+		/>
+		<ComboBox SelectedIndex="{Binding varSepIndex,Converter={StaticResource EnumConverterKey},ConverterParameter={x:Type local2:VarSepMethodsEnum}}" Style="{StaticResource resComboStyleWidth245}" Margin="0,3,0,0"
+			ItemTemplate="{StaticResource schemeItemTemplate}"
+			ItemsSource="{Binding listVarSepMethods, UpdateSourceTrigger=PropertyChanged}"
+			MaxDropDownHeight="408"
+			Visibility="{Binding Path=showVarSepCombo, Converter={StaticResource BoolToVisibilityConverterKey}}"
+			>
+		</ComboBox>
+		<ComboBox SelectedIndex="{Binding crIndex,Converter={StaticResource EnumConverterKey},ConverterParameter={x:Type local2:CRMethodsEnum}}" Style="{StaticResource resComboStyleWidth245}" Margin="0,3,0,0"
+			ItemTemplate="{StaticResource schemeItemTemplate}"
+			ItemsSource="{Binding listCRMethods, UpdateSourceTrigger=PropertyChanged}"
+			MaxDropDownHeight="408"
+			Visibility="{Binding Path=showCRCombo, Converter={StaticResource BoolToVisibilityConverterKey}}"
+			>
+		</ComboBox>
+
+		<StackPanel Visibility="{Binding Path=showLParamSlider, Converter={StaticResource BoolToVisibilityConverterKey}}">
+			<TextBlock Text="{x:Static loc:Resources.strLParameter}" FontSize="15" HorizontalAlignment="Center"/>
+			<DockPanel VerticalAlignment="Center">
+				<Label Content="{Binding ElementName=slValue, Path=Value, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Right" Margin="3,0,0,0"/>
+				<Slider Maximum="{Binding sliderLParamTicksMax, Mode=TwoWay}" Minimum="{Binding sliderLParamTicksMin, Mode=TwoWay}" TickFrequency="1" TickPlacement="BottomRight" Margin="0,3,0,0"
+					Value="{Binding idxLParam, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" x:Name="slValue" LargeChange="1" IsSnapToTickEnabled="True">
+				</Slider>
+			</DockPanel>
+		</StackPanel>
+
+		<TextBlock Text="Точность" FontSize="15" HorizontalAlignment="Center"
+		/>
+		<ComboBox SelectedIndex="{Binding precisionSelectedIndex}" Style="{StaticResource resComboStyleWidth245}" Margin="0,3,0,0"
+			ItemTemplate="{StaticResource PrecisionItemTemplate}"
+			ItemsSource="{Binding listPrecisions, UpdateSourceTrigger=PropertyChanged}"
+			>
+		</ComboBox>
+
+		<CheckBox IsChecked="{Binding isOpenCLCheckBoxChecked}" Content="OpenCL" Style="{StaticResource checkBoxStyle}" HorizontalAlignment="Left" Margin="0,3,0,0"
+		/>
+		<CheckBox IsChecked="{Binding isCUDACheckBoxChecked}" Content="CUDA" Style="{StaticResource checkBoxStyle}" HorizontalAlignment="Left" Margin="0,3,0,0"
+		/>
+
+		<ComboBox SelectedIndex="{Binding deviceOCLSelectedIndex}" Style="{StaticResource resComboStyleWidth245}" Margin="0,3,0,0"
+			ItemTemplate="{StaticResource OCLDeviceItemTemplate}"
+			ItemsSource="{Binding listOpenCLDevices, UpdateSourceTrigger=PropertyChanged}"
+			Visibility="{Binding Path=isOpenCLCheckBoxChecked, Converter={StaticResource BoolToVisibilityConverterKey}}"
+			>
+		</ComboBox>
+		<ComboBox SelectedIndex="{Binding deviceCUDASelectedIndex}" Style="{StaticResource resComboStyleWidth245}" Margin="0,3,0,0"
+			ItemTemplate="{StaticResource CUDADeviceItemTemplate}"
+			ItemsSource="{Binding listCUDADevices, UpdateSourceTrigger=PropertyChanged}"
+			Visibility="{Binding Path=isCUDACheckBoxChecked, Converter={StaticResource BoolToVisibilityConverterKey}}"
+			>
+		</ComboBox>
+
+		<CheckBox IsChecked="{Binding isCompareAnalytic}" Content="{x:Static loc:Resources.strCompareAnalytic}" Style="{StaticResource checkBoxStyle}" HorizontalAlignment="Left" Margin="0,3,0,0"
+			Visibility="{Binding Path=showCompareAnalytic, Converter={StaticResource BoolToVisibilityConverterKey}}"
+		/>
+		<Button Height="25" Width="130" Margin="0,3,0,0" Content="{x:Static loc:Resources.strCalculate}"
+			 Visibility="{Binding Path=showCalculate, Converter={StaticResource BoolToVisibilityConverterKey}}"
+			Command="{Binding allIterationsCommand}" Style="{StaticResource btnGreenStyle}" HorizontalAlignment="Center" VerticalAlignment="Top">
+		</Button>
+	</StackPanel>
+
+</UserControl>

@@ -1,0 +1,318 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="strArithMean" xml:space="preserve">
+    <value>Средне-арифметическая</value>
+  </data>
+  <data name="strBiconjGrad" xml:space="preserve">
+    <value>Бисопряженных градиентов</value>
+  </data>
+  <data name="strBoundaryParameters" xml:space="preserve">
+    <value>Должны быть заданы либо 'funcLeft', 'funcRight', 'funcTop', 'funcBottom' либо 'funcBoundary".</value>
+  </data>
+  <data name="strCalcTime" xml:space="preserve">
+    <value>Время счета:</value>
+  </data>
+  <data name="strCalculate" xml:space="preserve">
+    <value>Посчитать</value>
+  </data>
+  <data name="strCancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="strChebish3" xml:space="preserve">
+    <value>3-слойная Чебышевская</value>
+  </data>
+  <data name="strChebishBoost" xml:space="preserve">
+    <value>Чебышевское ускорение</value>
+  </data>
+  <data name="strCompareAnalytic" xml:space="preserve">
+    <value>Сравнение с аналитическим</value>
+  </data>
+  <data name="strConjGrad" xml:space="preserve">
+    <value>Сопряженных градиентов</value>
+  </data>
+  <data name="strCR" xml:space="preserve">
+    <value>Циклической редукции (CR)</value>
+  </data>
+  <data name="strExpressionError" xml:space="preserve">
+    <value>Ошибка вычисления выражения</value>
+  </data>
+  <data name="strFA" xml:space="preserve">
+    <value>Разделения переменных (FA)</value>
+  </data>
+  <data name="strFastIndex" xml:space="preserve">
+    <value>Быстрый индекс</value>
+  </data>
+  <data name="strFFT" xml:space="preserve">
+    <value>БПФ</value>
+  </data>
+  <data name="strFile" xml:space="preserve">
+    <value>Файл {0}</value>
+  </data>
+  <data name="strFour" xml:space="preserve">
+    <value>Количество значений должно быть 4.</value>
+  </data>
+  <data name="strGradDesc" xml:space="preserve">
+    <value>Скорейшего спуска</value>
+  </data>
+  <data name="strIndex" xml:space="preserve">
+    <value>Индекс:</value>
+  </data>
+  <data name="strInitialization" xml:space="preserve">
+    <value>Инициализация:</value>
+  </data>
+  <data name="strInterpol" xml:space="preserve">
+    <value>Интерполяция</value>
+  </data>
+  <data name="strIterations" xml:space="preserve">
+    <value>Итераций:</value>
+  </data>
+  <data name="strJordanBoost" xml:space="preserve">
+    <value>Жорданово ускорение</value>
+  </data>
+  <data name="strMatrProgonka" xml:space="preserve">
+    <value>Матричной прогонки</value>
+  </data>
+  <data name="strMean" xml:space="preserve">
+    <value>Среднее (min+max)/2</value>
+  </data>
+  <data name="strMethodOrScheme" xml:space="preserve">
+    <value>Метод/Схема</value>
+  </data>
+  <data name="strDeviation" xml:space="preserve">
+    <value>Отклонение:</value>
+  </data>
+  <data name="strMinRes" xml:space="preserve">
+    <value>Минимальных невязок</value>
+  </data>
+  <data name="strMultiGridVC" xml:space="preserve">
+    <value>Многосеточный (V-цикл)</value>
+  </data>
+  <data name="strMultithreading" xml:space="preserve">
+    <value>Многопоточность</value>
+  </data>
+  <data name="strNoInputData" xml:space="preserve">
+    <value>Отсутствуют(или неверные) данные в папке {0}</value>
+  </data>
+  <data name="strParsingParameterError" xml:space="preserve">
+    <value>Ошибка чтения параметра {0}={1}</value>
+  </data>
+  <data name="strPiecewise" xml:space="preserve">
+    <value>Кусочно-линейная(Средне-арифметическая)</value>
+  </data>
+  <data name="strPiecewiseWeight" xml:space="preserve">
+    <value>Кусочно-линейная(Весовая)</value>
+  </data>
+  <data name="strProgonka" xml:space="preserve">
+    <value>Прогонка</value>
+  </data>
+  <data name="strPTM" xml:space="preserve">
+    <value>Попеременно-треугольный</value>
+  </data>
+  <data name="strReadInputData" xml:space="preserve">
+    <value>Чтение входных данных</value>
+  </data>
+  <data name="strReqParameterMissed" xml:space="preserve">
+    <value>Отсутствует обязательный параметр '{0}'</value>
+  </data>
+  <data name="strResults" xml:space="preserve">
+    <value>Результаты</value>
+  </data>
+  <data name="strSavingGIF" xml:space="preserve">
+    <value>Сохранить анимир. GIF</value>
+  </data>
+  <data name="strSimpleIteration" xml:space="preserve">
+    <value>Простой итерации</value>
+  </data>
+  <data name="strSlidingIteration" xml:space="preserve">
+    <value>Скользящей итерации</value>
+  </data>
+  <data name="strSOR" xml:space="preserve">
+    <value>Верхней релаксации</value>
+  </data>
+  <data name="strSplitting" xml:space="preserve">
+    <value>Локально-одномерная</value>
+  </data>
+  <data name="strStabilized" xml:space="preserve">
+    <value>Стабилизированный</value>
+  </data>
+  <data name="strTask" xml:space="preserve">
+    <value>Задача</value>
+  </data>
+  <data name="strVarDir" xml:space="preserve">
+    <value>Продольно-поперечная</value>
+  </data>
+  <data name="strVisualization" xml:space="preserve">
+    <value>Визуализация</value>
+  </data>
+  <data name="strFACR" xml:space="preserve">
+    <value>Неполной редукции (FACR)</value>
+  </data>
+  <data name="strMarchingVector" xml:space="preserve">
+    <value>Маршевый векторный</value>
+  </data>
+  <data name="strLParameter" xml:space="preserve">
+    <value>Параметр L</value>
+  </data>
+  <data name="strPrecisionFloat" xml:space="preserve">
+    <value>Float</value>
+  </data>
+  <data name="strPrecisionDouble" xml:space="preserve">
+    <value>Double</value>
+  </data>
+  <data name="strPrecisionDD128" xml:space="preserve">
+    <value>DD128</value>
+  </data>
+  <data name="strPrecisionHalf" xml:space="preserve">
+    <value>Half</value>
+  </data>
+  <data name="strPrecisionQD256" xml:space="preserve">
+    <value>QD256</value>
+  </data>
+  <data name="strCalculating" xml:space="preserve">
+    <value>Вычисление</value>
+  </data>
+  <data name="strComparing" xml:space="preserve">
+    <value>Сравнение</value>
+  </data>
+  <data name="strMethod" xml:space="preserve">
+    <value>Метод</value>
+  </data>
+  <data name="strReduction" xml:space="preserve">
+    <value>Редукция</value>
+  </data>
+  <data name="strMarchingScalar" xml:space="preserve">
+    <value>Маршевый скалярный</value>
+  </data>
+  <data name="strMethodSN" xml:space="preserve">
+    <value>Самарский-Николаев</value>
+  </data>
+  <data name="strMethodBM" xml:space="preserve">
+    <value>Бунеман вариант 1</value>
+  </data>
+  <data name="strIterationsCount" xml:space="preserve">
+    <value>Количество итераций</value>
+  </data>
+  <data name="strHeatMapsCount" xml:space="preserve">
+    <value>Количество картинок</value>
+  </data>
+  <data name="strStepViz" xml:space="preserve">
+    <value>Шаг</value>
+  </data>
+</root>

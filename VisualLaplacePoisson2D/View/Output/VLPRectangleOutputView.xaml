@@ -1,0 +1,72 @@
+<UserControl x:Class="VLP2D.View.VLPRectangleOutputView"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+	xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+	xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+	xmlns:Behaviors="clr-namespace:VLP2D.Common"
+	xmlns:ViewModel="clr-namespace:VLP2D.ViewModel"
+	xmlns:local="clr-namespace:VLP2D.View"
+	xmlns:loc="clr-namespace:VLP2D.Properties"
+	mc:Ignorable="d" 
+	d:DesignHeight="300" d:DesignWidth="300">
+
+	<UserControl.DataContext>
+		<ViewModel:VLPRectangleOutputVM/>
+	</UserControl.DataContext>
+
+	<Grid>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="*"/>
+			<RowDefinition Height="Auto"/>
+		</Grid.RowDefinitions>
+		<Border Grid.Column="0" Background="{x:Null}" BorderThickness="1" BorderBrush="#AAAAAA" Margin="0,0,2,0">
+			<Grid>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="Auto"/>
+				</Grid.ColumnDefinitions>
+				<Image Grid.Column="0" Source="{Binding heatMap}"/>
+				<Image Grid.Column="1" Source="{Binding heatMapDiff}" Margin="5,0,0,0"/>
+			</Grid>
+		</Border>
+		<StackPanel Grid.Row="1">
+			<StackPanel Visibility="{Binding Path=bShowSlider, Converter={StaticResource BoolToVisibilityConverterKey}}">
+				<Slider Maximum="{Binding sliderTicks, Mode=TwoWay}" Minimum="0" TickFrequency="1" TickPlacement="None"
+					Value="{Binding idxHeatMap, Mode=TwoWay}" x:Name="mySlider" LargeChange="{Binding sliderLargeChange, Mode=TwoWay}"
+					 IsSnapToTickEnabled="True"
+					>
+				</Slider>
+				<StackPanel Orientation="Horizontal">
+					<Label Content="{x:Static loc:Resources.strIndex}" />
+					<TextBlock Text="{Binding Value, ElementName=mySlider, StringFormat={}{0:0}}" VerticalAlignment="Center"/>
+					<Label Content="{x:Static loc:Resources.strIterations}" Margin="5,0,0,0"
+						Visibility="{Binding Path=showIterations, Converter={StaticResource BoolToVisibilityConverterKey}}"
+					/>
+					<TextBlock Text="{Binding allIters}" VerticalAlignment="Center"/>
+					<Label Content="{x:Static loc:Resources.strCalcTime}" Margin="5,0,0,0"/>
+					<TextBlock Text="{Binding allTime}" VerticalAlignment="Center"/>
+					<Label Content="{x:Static loc:Resources.strDeviation}" Margin="5,0,0,0" Visibility="{Binding Path=showDeviation, Converter={StaticResource BoolToVisibilityConverterKey}}"/>
+					<TextBlock Text="{Binding deviation}" VerticalAlignment="Center" Visibility="{Binding Path=showDeviation, Converter={StaticResource BoolToVisibilityConverterKey}}"/>
+				</StackPanel>
+			</StackPanel>
+			<StackPanel Visibility="{Binding Path=bShowProgress, Converter={StaticResource BoolToVisibilityConverterKey}}">
+				<Grid>
+					<ProgressBar Name="progress" Minimum="0" Maximum="100" Value="{Binding progressValue}" Height="20"/>
+					<TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#FFFF0000">
+						<Run Text="{Binding progressHeader}"></Run>
+						<Run Text="{Binding ElementName=progress, Path=Value, StringFormat={}{0:#,#.00}%}"></Run>
+					</TextBlock>
+				</Grid>
+				<Button Height="25" Width="130" Margin="0,5,0,5"
+					Command="{Binding allIterationsCancelCommand}" Style="{StaticResource btnRedStyle}"
+					HorizontalAlignment="Center" VerticalAlignment="Center"
+					>
+					<TextBlock Text="{x:Static loc:Resources.strCancel}"/>
+				</Button>
+			</StackPanel>
+		</StackPanel>
+		<TextBlock Grid.Row="1" Text="{Binding elapsedInfo}" FontSize="15" Margin="-255,-240,0,0" IsHitTestVisible="False"/>
+	</Grid>
+
+</UserControl>
