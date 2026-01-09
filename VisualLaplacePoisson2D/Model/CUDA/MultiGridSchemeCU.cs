@@ -9,12 +9,12 @@ using VLP2D.Common;
 
 namespace VLP2D.Model
 {
-	public class MultiGridSchemeCU<T> : Iterative1DScheme<T>, IScheme<T> where T : struct, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>
+	class MultiGridSchemeCU<T> : Iterative1DScheme<T>, IScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		CudaContext ctx;
 		readonly CudaDeviceVariable<T>[] un, rhs, res;//right hand side,residual
 		CudaDeviceVariable<T> fn;
-		readonly T[] stepX, stepY;
+		T[] arStepsX, arStepsY;
 		readonly SlidingIterationMultiGridSchemeCU<T> smoother;
 		readonly T eps;
 		readonly int nLevels;
@@ -29,23 +29,24 @@ namespace VLP2D.Model
 		CudaKernel kernelResidual, kernelRestrictResidual, kernelFillArrayWithEdges, kernelInterpolate, kernelEpsExceeded;
 		object[] argsResidual, argsRestrictResidual, argsFillArrayWithEdges, argsInterpolate, argsEpsExceeded;
 
-		public MultiGridSchemeCU(int cXSegments, int cYSegments, T stepXIn, T stepYIn, Func<T, T, T> fKsi, T eps, int cudaDevice)
+		public MultiGridSchemeCU(RectangleData<T> rectData, Func<T, T, T> fKsi, T eps, int cudaDevice) :
+			base(rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY)
 		{
 			ctx = new CudaContext(cudaDevice);
-			dimX = cXSegments + 1;
-			dimY = cYSegments + 1;
+			dimX = rectData.cXSegments + 1;
+			dimY = rectData.cYSegments + 1;
 			this.eps = eps;
 
 			un0 = new T[dimX * dimY];
 
 			if (fKsi != null)
 			{
-				GridIterator.iterate(dimX - 1, dimY - 1, (i, j) => un0[i * dimY + j] = -fKsi(stepXIn * T.CreateTruncating(i), stepYIn * T.CreateTruncating(j)));
+				GridIterator.iterate(dimX - 1, dimY - 1, (i, j) => un0[i * dimY + j] = -fKsi(xMin + stepX * T.CreateTruncating(i), yMin + stepY * T.CreateTruncating(j)));
 				fn = un0;
 			}
 
-			int nLevelsX = (int)Math.Log(cXSegments, 2);
-			int nLevelsY = (int)Math.Log(cYSegments, 2);
+			int nLevelsX = (int)Math.Log(rectData.cXSegments, 2);
+			int nLevelsY = (int)Math.Log(rectData.cYSegments, 2);
 			nLevels = Math.Min(nLevelsX, nLevelsY);
 
 			dim0 = new int[nLevels];
@@ -53,18 +54,18 @@ namespace VLP2D.Model
 			un = new CudaDeviceVariable<T>[nLevels];
 			rhs = new CudaDeviceVariable<T>[nLevels];
 			res = new CudaDeviceVariable<T>[nLevels];
-			stepX = new T[nLevels];
-			stepY = new T[nLevels];
+			arStepsX = new T[nLevels];
+			arStepsY = new T[nLevels];
 			smoother = new SlidingIterationMultiGridSchemeCU<T>(ctx);
 			workSize2DInternalPoints = new int[nLevels][];
 			workSize2DAllPoints = new int[nLevels][];
 			workSize1DInternalPointsX = new int[nLevels][];
 			workSize1DInternalPointsY = new int[nLevels][];
 
-			int cSegsX = cXSegments;//is 2^n
-			int cSegsY = cYSegments;//is 2^n
-			T lngX = stepXIn * T.CreateTruncating(cSegsX);
-			T lngY = stepYIn * T.CreateTruncating(cSegsY);
+			int cSegsX = rectData.cXSegments;//is 2^n
+			int cSegsY = rectData.cYSegments;//is 2^n
+			T lngX = stepX * T.CreateTruncating(cSegsX);
+			T lngY = stepY * T.CreateTruncating(cSegsY);
 			try
 			{
 				for (int i = 0; i < nLevels; i++)
@@ -74,9 +75,9 @@ namespace VLP2D.Model
 					un[i] = new CudaDeviceVariable<T>(dim0[i] * dim1[i]);
 					rhs[i] = (i == 0) && (fn != null) ? fn : new CudaDeviceVariable<T>(dim0[i] * dim1[i]);
 					res[i] = (i < nLevels - 1) ? new CudaDeviceVariable<T>(dim0[i] * dim1[i]) : null;
-					stepX[i] = lngX / T.CreateTruncating(cSegsX);
-					stepY[i] = lngY / T.CreateTruncating(cSegsY);
-					smoother.addKernelParameters(dim0[i], dim1[i], un[i], (i == 0) ? fn : rhs[i], stepX[i], stepY[i]);
+					arStepsX[i] = lngX / T.CreateTruncating(cSegsX);
+					arStepsY[i] = lngY / T.CreateTruncating(cSegsY);
+					smoother.addKernelParameters(dim0[i], dim1[i], un[i], (i == 0) ? fn : rhs[i], arStepsX[i], arStepsY[i]);
 					cSegsX /= 2;
 					cSegsY /= 2;
 					workSize2DInternalPoints[i] = [dim0[i] - 2, dim1[i] - 2];
@@ -126,7 +127,7 @@ namespace VLP2D.Model
 			kernelEpsExceeded = new CudaKernel(functionNameEpsExceeded, (CUmodule)module);
 			UtilsCU.set2DKernelDims(kernelEpsExceeded, workSize2DInternalPoints[0][0], workSize2DInternalPoints[0][1]);
 
-			argsResidual = [res[0].DevicePointer, rhs[0].DevicePointer, un[0].DevicePointer, stepX[0] * stepX[0], stepY[0] * stepY[0], dim1[0], 0, 0];
+			argsResidual = [res[0].DevicePointer, rhs[0].DevicePointer, un[0].DevicePointer, arStepsX[0] * arStepsX[0], arStepsY[0] * arStepsY[0], dim1[0], 0, 0];
 			argsRestrictResidual = [rhs[0].DevicePointer, res[0].DevicePointer, dim1[0 + 1], dim1[0 + 0], 0, 0];
 			argsFillArrayWithEdges = [un[0].DevicePointer, 0, 0, 0];
 			argsInterpolate = [un[0 + 0].DevicePointer, un[0 + 1].DevicePointer, dim1[0 + 1], dim1[0 + 0], 0, 0];
@@ -168,8 +169,8 @@ namespace VLP2D.Model
 			argsResidual[0] = res[level].DevicePointer;
 			argsResidual[1] = rhs[level].DevicePointer;
 			argsResidual[2] = un[level].DevicePointer;
-			argsResidual[3] = stepX[level] * stepX[level];
-			argsResidual[4] = stepY[level] * stepY[level];
+			argsResidual[3] = arStepsX[level] * arStepsX[level];
+			argsResidual[4] = arStepsY[level] * arStepsY[level];
 			argsResidual[5] = dim1[level];
 			argsResidual[6] = workSize2DInternalPoints[level][0];
 			argsResidual[7] = workSize2DInternalPoints[level][1];

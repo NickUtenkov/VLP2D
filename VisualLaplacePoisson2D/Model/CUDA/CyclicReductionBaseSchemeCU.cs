@@ -12,9 +12,9 @@ using static VLP2D.Common.UtilsPict;
 
 namespace VLP2D.Model
 {
-	class CyclicReductionBaseSchemeCU<T> : Direct1DBoundariesScheme<T>, IScheme<T> where T : struct, INumber<T>, IMinMaxValue<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>
+	class CyclicReductionBaseSchemeCU<T> : Direct1DBoundariesScheme<T>, IScheme<T> where T : unmanaged, INumber<T>, IMinMaxValue<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>, IRootFunctions<T>
 	{
-		protected T stepX, stepY, bCoef;
+		protected T bCoef;
 		Func<T, T, T> fKsi;
 		protected readonly int n;
 		protected List<BitmapSource> lstBitmap;
@@ -26,11 +26,9 @@ namespace VLP2D.Model
 		protected CudaContext ctx;
 		protected CudaDeviceVariable<T> unCU;
 
-		public CyclicReductionBaseSchemeCU(int cXSegments, int cYSegments, T stepXIn, T stepYIn, Func<T, T, T> fKsiIn, List<BitmapSource> lstBitmap, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn, int cudaDevice) :
-			base(cXSegments + 1, cYSegments + 1, fKsiIn == null, lstBitmap != null)
+		public CyclicReductionBaseSchemeCU(RectangleData<T> rectData, Func<T, T, T> fKsiIn, List<BitmapSource> lstBitmap, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn, int cudaDevice) :
+			base(rectData.cXSegments + 1, rectData.cYSegments + 1, rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY, fKsiIn == null, lstBitmap != null)
 		{
-			stepX = stepXIn;
-			stepY = stepYIn;
 			bCoef = stepY * stepY / (stepX * stepX);//[SNR] p.145, (4), steps are reversed
 			reportProgress = reportProgressIn;
 
@@ -69,7 +67,7 @@ namespace VLP2D.Model
 				T stepX2 = stepX * stepX;//steps are reversed
 				int upper1 = N1;
 				int upper2 = N2;
-				GridIterator.iterate(upper1, upper2, (i, j) => fj[i * dim2 + j] = stepX2 * fKsi(stepX * T.CreateTruncating(i), stepY * T.CreateTruncating(j)));//[SNR] p.123 (8)
+				GridIterator.iterate(upper1, upper2, (i, j) => fj[i * dim2 + j] = stepX2 * fKsi(xMin + stepX * T.CreateTruncating(i), yMin + stepY * T.CreateTruncating(j)));//[SNR] p.123 (8)
 			}
 		}
 

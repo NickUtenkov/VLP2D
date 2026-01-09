@@ -102,8 +102,8 @@ namespace VLP2D.Model
 
 	interface IVLPRectangleModel
 	{
-		void prepareCalculation(VLPRectangleParams pParams, InterpolationEnumVLPRectangle idxInterpolation, PlatformAndSchemeIndex platformScheme, List<BitmapSource> lstBitmap0, List<BitmapSource> lstBitmapDiff, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Func<MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmapDiff);
-		void recalculateSteps(VLPRectangleParams pParams, PlatformAndSchemeIndex platformScheme, bool isVarSepProgonkaGPU, VarSepMethodsEnum varSepMethodCPU);
+		void prepareCalculation(VLPRectangleParams pParams, InterpolationEnumVLPRectangle idxInterpolation, PlatformAndSchemeIndex platformScheme, List<BitmapSource> lstBitmap0, List<BitmapSource> lstBitmapDiff, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Func<MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmapDiff, Action actionSurface);
+		RectangleDataDouble recalculateSteps(VLPRectangleParams pParams, PlatformAndSchemeIndex platformScheme, bool isVarSepProgonkaGPU, VarSepMethodsEnum varSepMethodCPU);
 		void compileFunctions(VLPRectangleParams pParams);
 		void setMethodParams(MethodsParams mParams);
 		void changeMultiThread(bool isMulti);

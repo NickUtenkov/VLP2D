@@ -13,27 +13,25 @@ using static VLP2D.Common.UtilsPict;
 
 namespace VLP2D.Model
 {
-	class MarchingScheme<T> : DirectJaggedScheme<T>, IScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>
+	class MarchingScheme<T> : DirectJaggedScheme<T>, IScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		protected T[][] fn;
 		float[][] unShow;
 		Func<T, T, T> fKsi;
 		T[][] pq0, pq1, pq2, ŵ;//p & q arrays in one array
 		readonly int k, L, M, cCores, pqDim2;
-		T stepX, stepY, cBase, ai, bi, subsupra, normFactor;//subsupra - subdiagonal,supradiagonal
+		T cBase, ai, bi, subsupra, normFactor;//subsupra - subdiagonal,supradiagonal
 		protected List<BitmapSource> lstBitmap;
 		Action<double> reportProgress;
 		float curProgress, oldProgress;
 		bool iterationsCanceled;
-		CancellationTokenSource cts = new CancellationTokenSource();
-		readonly ParallelOptions optionsParallel;
 		FFTCalculator<T> fftM;
 		T km1, k0;
 		T _2 = T.CreateTruncating(2);
 		T _4 = T.CreateTruncating(4);
 
-		public MarchingScheme(int cXSegments, int cYSegments, T stepXIn, T stepYIn, int cCores, Func<T, T, T> fKsiIn, int paramL, List<BitmapSource> lstBitmap0, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn) :
-			base(cXSegments, cYSegments, fCreateBitmap)
+		public MarchingScheme(RectangleData<T> rectData, Func<T, T, T> fKsiIn, int paramL, List<BitmapSource> lstBitmap0, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn) :
+			base(rectData.cXSegments, rectData.cYSegments, rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY, fCreateBitmap)
 		{
 			fn = new T[Nx - 1][];
 			for (int i = 0; i < Nx - 1; i++) fn[i] = new T[Ny + 1];
@@ -49,10 +47,9 @@ namespace VLP2D.Model
 			//Bank Rose Marching Algorithms for Elliptic Boundary Value Problems. I The Constant Coefficient Case.pdf p.21(6.8)
 			normFactor = T.Sqrt(T.CreateTruncating(2.0 / Ny));//normalizing factor;Demmel rus 281
 
+			cCores = GridIterator.optionsParallel.MaxDegreeOfParallelism;
 			fftM = new FFTCalculator<T>(cCores, Ny);
 
-			stepX = stepXIn;
-			stepY = stepYIn;
 			subsupra = stepX * stepX / (stepY * stepY);//[SNR] p.106, (4)
 			ai = subsupra;//subdiagonal,[SNR] p.106, (4)
 			bi = subsupra;//supradiagonal,[SNR] p.106, (4)
@@ -71,9 +68,6 @@ namespace VLP2D.Model
 			oldProgress = 0;
 
 			cBase = (T.One + subsupra) * _2;//[SNR] p.106, (4)
-
-			this.cCores = cCores;
-			optionsParallel = new ParallelOptions() { MaxDegreeOfParallelism = cCores, CancellationToken = cts.Token };
 		}
 
 		public T doIteration(int iter)
@@ -92,7 +86,9 @@ namespace VLP2D.Model
 			reversePath();
 			if (iterationsCanceled) return T.Zero;
 
+			if (Nx < 11) UtilsPrint.printJaggedArray(un, "{0,7:0.000}", "un");
 			restoreBounds(un);
+			if (Nx < 11) UtilsPrint.printJaggedArray(un, "{0,7:0.000}", "un");
 
 			return T.Zero;
 		}
@@ -100,19 +96,20 @@ namespace VLP2D.Model
 		void initFj()
 		{
 			T stepX2 = stepX * stepX;
-			if (fKsi != null) GridIterator.iterate(0, Nx - 1, 1, fn[0].GetUpperBound(0), (i, j) => { fn[i][j] += stepX2 * fKsi(stepX * T.CreateTruncating(i + 1), stepY * T.CreateTruncating(j)); });//[SNR] p.123 (8),[SNE] p.120 (8)
+			if (fKsi != null) GridIterator.iterate(0, Nx - 1, 1, fn[0].GetUpperBound(0), (i, j) => { fn[i][j] += stepX2 * fKsi(xMin + stepX * T.CreateTruncating(i + 1), yMin + stepY * T.CreateTruncating(j)); });//[SNR] p.123 (8),[SNE] p.120 (8)
 
-			Parallel.For(0, Nx - 1, optionsParallel, (i) =>
+			Parallel.For(0, Nx - 1, GridIterator.optionsParallel, (i) =>
 			{
 				fn[i][1] += subsupra * bndB[i];//[SNR] p.123 (8),[SNE] p.120 (8)
 				fn[i][Ny - 1] += subsupra * bndT[i];//[SNR] p.123 (8),[SNE] p.120 (8)
 			});
 
-			Parallel.For(1, Ny, optionsParallel, (j) =>
+			Parallel.For(1, Ny, GridIterator.optionsParallel, (j) =>
 			{
 				fn[0][j] += bndL[j - 1];//analog [SNR] p.123 (8),[SNE] p.120 (8)
 				fn[Nx - 2][j] += bndR[j - 1];//analog [SNR] p.123 (8),[SNE] p.120 (8)
 			});
+			if (Nx < 11) UtilsPrint.printJaggedArray(fn, "{0,7:0.000}", "fn");
 		}
 
 		void forwardPath()
@@ -138,7 +135,7 @@ namespace VLP2D.Model
 			T piLyambda = T.Pi / (_2 * T.CreateTruncating(Ny));//Ny = fftSize
 			T subsupra2 = subsupra * _2;
 
-			Parallel.For(0, cCores, optionsParallel, (core, loopState) =>
+			Parallel.For(0, cCores, GridIterator.optionsParallel, (core, loopState) =>
 			{
 				_φ[core] = new T[2 * L];
 				_α[core] = new T[alfaUB + 1];
@@ -266,7 +263,7 @@ namespace VLP2D.Model
 			pq1 = new T[L * 2][];
 			pq2 = new T[L * 2][];
 
-			Parallel.For(0, L, optionsParallel, (l, loopState) =>
+			Parallel.For(0, L, GridIterator.optionsParallel, (l, loopState) =>
 			{
 				calculatePkQk(l);
 
@@ -360,7 +357,7 @@ namespace VLP2D.Model
 
 		void calculateĜ()
 		{//memory used while working this func is 6L*(M+2), pq0 is ĝ
-			Parallel.For(0, cCores, optionsParallel, (core, loopState) =>
+			Parallel.For(0, cCores, GridIterator.optionsParallel, (core, loopState) =>
 			{
 				for (int l = 0 + core; l <= L - 1; l += cCores)
 				{//'-1' for zero based
@@ -386,7 +383,7 @@ namespace VLP2D.Model
 		{//memory used while working this func is 4L*(M+2);
 			int rem = L > 4 ? L / 4 : 1;//8 pictures(loop 2L)
 			un = new T[Nx + 1][];
-			Parallel.For(0, cCores, optionsParallel, (core, loopState) =>
+			Parallel.For(0, cCores, GridIterator.optionsParallel, (core, loopState) =>
 			{
 				for (int iW = 0 + core; iW < 2 * L; iW += cCores)
 				{
@@ -414,7 +411,7 @@ namespace VLP2D.Model
 			int rem = L > 8 ? L / 8 : 1;//8 pictures
 			object locker = (lstBitmap != null) ? new object() : null;
 			int val = -1;
-			Parallel.For(0, L, optionsParallel, (ll, loopState) =>
+			Parallel.For(0, L, GridIterator.optionsParallel, (ll, loopState) =>
 			{
 				int l = ll;
 				if (lstBitmap != null) lock (locker)
@@ -495,7 +492,7 @@ namespace VLP2D.Model
 
 		void restoreBounds(T[][] uu)
 		{
-			Parallel.For(1, Nx, optionsParallel, (i) =>
+			Parallel.For(1, Nx, GridIterator.optionsParallel, (i) =>
 			{
 				uu[i][0] = bndB[i - 1];
 				uu[i][Ny] = bndT[i - 1];
@@ -503,17 +500,16 @@ namespace VLP2D.Model
 
 			uu[0] = new T[Ny + 1];
 			uu[Nx] = new T[Ny + 1];
-			Parallel.For(1, Ny, optionsParallel, (j) =>
+			Parallel.For(1, Ny, GridIterator.optionsParallel, (j) =>
 			{
 				uu[0][j] = bndL[j - 1];
 				uu[Nx][j] = bndR[j - 1];
 			});
 
-			T nan = T.Zero / T.Zero;
-			uu[0][0] = nan;
-			uu[Nx][0] = nan;
-			uu[0][Ny] = nan;
-			uu[Nx][Ny] = nan;
+			uu[0][0] = unLB;
+			uu[Nx][0] = unRB;
+			uu[0][Ny] = unLT;
+			uu[Nx][Ny] = unRT;
 		}
 
 		public void initAfterBoundariesAndInitialIterationInited()
@@ -525,22 +521,22 @@ namespace VLP2D.Model
 
 				void fillBounds(float[][] uu)
 				{
-					Parallel.For(1, Nx, optionsParallel, (i) =>
+					Parallel.For(1, Nx, GridIterator.optionsParallel, (i) =>
 					{
 						uu[i][0] = float.CreateTruncating(bndB[i - 1]);
 						uu[i][Ny] = float.CreateTruncating(bndT[i - 1]);
 					});
 
-					Parallel.For(1, Ny, optionsParallel, (j) =>
+					Parallel.For(1, Ny, GridIterator.optionsParallel, (j) =>
 					{
 						uu[0][j] = float.CreateTruncating(bndL[j - 1]);
 						uu[Nx][j] = float.CreateTruncating(bndR[j - 1]);
 					});
 
-					uu[0][0] = (uu[1][0] + uu[0][1]) / 2;
-					uu[Nx][0] = (uu[Nx - 1][0] + uu[Nx][1]) / 2;
-					uu[0][Ny] = (uu[1][Ny] + uu[0][Ny - 1]) / 2;
-					uu[Nx][Ny] = (uu[Nx - 1][Ny] + uu[Nx][Ny - 1]) / 2;
+					uu[0][0] = float.CreateTruncating(unLB);
+					uu[Nx][0] = float.CreateTruncating(unRB);
+					uu[0][Ny] = float.CreateTruncating(unLT);
+					uu[Nx][Ny] = float.CreateTruncating(unRT);
 				}
 			}
 		}

@@ -33,8 +33,6 @@ namespace VLP2D.Model
 		unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>,
 		IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
-		T stepX, stepY;
-		int cXSegments, cYSegments;
 		int elapsedIters, maxIters = -7;
 		IterationsKind iterationsKind;
 		T eps;
@@ -45,7 +43,6 @@ namespace VLP2D.Model
 		IScheme<T> scheme;
 
 		T[][] unDiff;
-		int degreeOfParallelism = Environment.ProcessorCount;
 
 		event progressDelegateLPRectangle progressEvent;
 		event progressHeaderDelegateLPRectangle progressHeaderEvent;
@@ -55,13 +52,13 @@ namespace VLP2D.Model
 		List<BitmapSource> lstBitmap, lstBitmapDiff;
 		Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap;
 		Func<MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmapDiff;
+		Action actionSurface;
 		bool visualize;
 		int stepHeatMap;
-		ParallelOptions optionsParallel;
 		PlatformAndSchemeIndex platformScheme;
 		InterpolationEnumVLPRectangle indexInterpolation;
 		MethodsParams methodParams;
-		StepsRecalculator<T> stepsRecalculator;
+		RectangleData<T> rectData = new RectangleData<T>();
 
 		CompiledFunctions<T> compiledFuncs;
 		Func<T, T> pFuncLeft, pFuncRight, pFuncTop, pFuncBottom;//for skip internal null check in CompiledFunctions
@@ -69,18 +66,23 @@ namespace VLP2D.Model
 
 		public VLPRectangleModel()
 		{
-			optionsParallel = new ParallelOptions();
 		}
 
-		public void recalculateSteps(VLPRectangleParams pParams, PlatformAndSchemeIndex platformScheme, bool isVarSepProgonkaGPU, VarSepMethodsEnum varSepMethodCPU)
+		public RectangleDataDouble recalculateSteps(VLPRectangleParams pParams, PlatformAndSchemeIndex platformScheme, bool isVarSepProgonkaGPU, VarSepMethodsEnum varSepMethodCPU)
 		{
-			stepsRecalculator = new StepsRecalculator<T>();
-			stepsRecalculator.recalculateSteps(pParams.xMax, pParams.cXSegmentsOriginal, pParams.yMax, pParams.cYSegmentsOriginal, platformScheme, isVarSepProgonkaGPU, varSepMethodCPU);
+			rectData.recalculateSteps(pParams.xMin, pParams.xMax, pParams.cXSegments, pParams.yMin, pParams.yMax, pParams.cYSegments, platformScheme, isVarSepProgonkaGPU, varSepMethodCPU);
 
-			pParams.stepX = double.CreateTruncating(stepsRecalculator.stepX);
-			pParams.stepY = double.CreateTruncating(stepsRecalculator.stepY);
-			pParams.cXSegments = stepsRecalculator.cXSegments;
-			pParams.cYSegments = stepsRecalculator.cYSegments;
+			RectangleDataDouble rdd;
+			rdd.stepX = double.CreateTruncating(rectData.stepX);
+			rdd.stepY = double.CreateTruncating(rectData.stepY);
+			rdd.cXSegments = rectData.cXSegments;
+			rdd.cYSegments = rectData.cYSegments;
+			rdd.xMin = double.CreateTruncating(rectData.xMin);
+			rdd.yMin = double.CreateTruncating(rectData.yMin);
+			rdd.xMax = double.CreateTruncating(rectData.xMax);
+			rdd.yMax = double.CreateTruncating(rectData.yMax);
+
+			return rdd;
 		}
 
 		public void setMaxIterations(int maxIterations)
@@ -100,19 +102,15 @@ namespace VLP2D.Model
 			pFuncAnalytic = compiledFuncs.pFuncAnalytic;
 		}
 
-		public void prepareCalculation(VLPRectangleParams pParams, InterpolationEnumVLPRectangle idxInterpolation, PlatformAndSchemeIndex platformScheme, List<BitmapSource> lstBitmap, List<BitmapSource> lstBitmapDiff, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Func<MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmapDiff)
+		public void prepareCalculation(VLPRectangleParams pParams, InterpolationEnumVLPRectangle idxInterpolation, PlatformAndSchemeIndex platformScheme, List<BitmapSource> lstBitmap, List<BitmapSource> lstBitmapDiff, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Func<MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmapDiff, Action actionSurface)
 		{
 			this.platformScheme = platformScheme;
 			indexInterpolation = idxInterpolation;
 
-			stepX = stepsRecalculator.stepX;
-			stepY = stepsRecalculator.stepY;
-			cXSegments = stepsRecalculator.cXSegments;
-			cYSegments = stepsRecalculator.cYSegments;
-
 			eps = getEpsilon(pParams.dictEps);
 			this.lstBitmap = lstBitmap;
 			this.fCreateBitmap = fCreateBitmap;
+			this.actionSurface = actionSurface;
 
 			float newStepX = 0, newStepY = 0;
 			double[,] uu = createInitialBitmap(pParams, idxInterpolation, ref newStepX, ref newStepY);
@@ -133,7 +131,9 @@ namespace VLP2D.Model
 						this.lstBitmapDiff = lstBitmapDiff;
 						this.fCreateBitmapDiff = fCreateBitmapDiff;
 						Adapter2D<double> adapter = new Adapter2D<double>(dim1, dim2, (i, j) => uu[i, j]);
-						UtilsDiff.calculateDifference<double>(adapter, unDiffLocal, newStepX, newStepY, compiledFuncsFloat.pFuncAnalytic, ref fMinDiffLocal, ref fMaxDiffLocal, null, null);
+						double xMin = double.CreateTruncating(rectData.xMin);
+						double yMin = double.CreateTruncating(rectData.yMin);
+						UtilsDiff.calculateDifference<double>(adapter, unDiffLocal, xMin, yMin , newStepX, newStepY, compiledFuncsFloat.pFuncAnalytic, ref fMinDiffLocal, ref fMaxDiffLocal, null, null);
 						BitmapSource bmsDiff = fCreateBitmapDiff(new MinMaxF(fMinDiffLocal, fMaxDiffLocal), new Adapter2D<float>(dim1, dim2, (i, j) => (float)unDiffLocal[i][j]));
 						if (bmsDiff != null) lstBitmapDiff.Add(bmsDiff);
 					}
@@ -203,17 +203,19 @@ namespace VLP2D.Model
 			pFuncBottomFloat = compiledFuncsFloat.pFuncBottom;
 			pFuncBoundaryFloat = compiledFuncsFloat.pFuncBoundary;
 
-			double ratio = (double)cYSegments / cXSegments;
-			int cXSegsBmp = (cXSegments > 200) ? 200 : cXSegments;
+			double ratio = (double)rectData.cYSegments / rectData.cXSegments;
+			int cXSegsBmp = (rectData.cXSegments > UtilsPict.pictDim) ? UtilsPict.pictDim : rectData.cXSegments;
 			int cYSegsBmp = (int)(ratio * cXSegsBmp);
 			double[,] uu = new double[cXSegsBmp + 1, cYSegsBmp + 1];
-			newStepX = float.CreateTruncating(stepX) * cXSegments / cXSegsBmp;
-			newStepY = float.CreateTruncating(stepY) * cYSegments / cYSegsBmp;
+			newStepX = float.CreateTruncating(rectData.stepX) * rectData.cXSegments / cXSegsBmp;
+			newStepY = float.CreateTruncating(rectData.stepY) * rectData.cYSegments / cYSegsBmp;
 
 			double bMin = double.MaxValue;
 			double bMax = double.MinValue;
-			UtilsBorders.initTopBottomBorders<double>(uu, newStepX, newStepY, pFuncBottomFloat, pFuncTopFloat, pFuncBoundaryFloat, ref bMin, ref bMax);
-			UtilsBorders.initLeftRightBorders<double>(uu, newStepX, newStepY, pFuncLeftFloat, pFuncRightFloat, pFuncBoundaryFloat, ref bMin, ref bMax);
+			double xMin = Convert.ToDouble(rectData.xMin);
+			double yMin = Convert.ToDouble(rectData.yMin);
+			UtilsBorders.initTopBottomBorders<double>(uu, xMin, yMin, newStepX, newStepY, pFuncBottomFloat, pFuncTopFloat, pFuncBoundaryFloat, ref bMin, ref bMax);
+			UtilsBorders.initLeftRightBorders<double>(uu, xMin, yMin, newStepX, newStepY, pFuncLeftFloat, pFuncRightFloat, pFuncBoundaryFloat, ref bMin, ref bMax);
 
 			if (idxInterpolation == InterpolationEnumVLPRectangle.Mean) UtilsII.initInitialIterationMean<double>(uu, (bMin + bMax) / 2.0f);
 			else if (idxInterpolation == InterpolationEnumVLPRectangle.ArithmeticMean) UtilsII.initInitialIterationArithmeticMean(uu);
@@ -234,104 +236,99 @@ namespace VLP2D.Model
 					SchemeCPUEnum idxScheme = (SchemeCPUEnum)platformScheme.idxScheme;
 					if (idxScheme == SchemeCPUEnum.SimpleIteration)
 					{
-						scheme = new SimpleIterationScheme<T>(cXSegments, cYSegments, stepX, stepY, mParams.isChebysh, eps, pFuncKsi);
+						scheme = new SimpleIterationScheme<T>(rectData, mParams.isChebysh, eps, pFuncKsi);
 						if (mParams.isChebysh) maxIters = scheme.maxIterations();
 					}
 					else if (idxScheme == SchemeCPUEnum.SlidingIteration)
 					{
-						scheme = new RelaxationScheme<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi, true, false, eps);
+						scheme = new RelaxationScheme<T>(rectData, pFuncKsi, true, false, eps);
 					}
 					else if (idxScheme == SchemeCPUEnum.SOR)
 					{
-						scheme = new RelaxationScheme<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi, false, false, eps);
+						scheme = new RelaxationScheme<T>(rectData, pFuncKsi, false, false, eps);
 					}
 					else if (idxScheme == SchemeCPUEnum.Splitting)
 					{
-						scheme = new SplittingScheme<T>(cXSegments, cYSegments, stepX, stepY, eps, pFuncKsi, optionsParallel);
+						scheme = new SplittingScheme<T>(rectData, eps, pFuncKsi);
 					}
 					else if (idxScheme == SchemeCPUEnum.VarDir)
 					{
-						scheme = new VarDirScheme<T>(cXSegments, cYSegments, stepX, stepY, eps, pFuncKsi, optionsParallel, mParams.isJordan);
+						scheme = new VarDirScheme<T>(rectData, eps, pFuncKsi, mParams.isJordan);
 						if (mParams.isJordan) maxIters = scheme.maxIterations();
 					}
 					else if (idxScheme == SchemeCPUEnum.PTM)
 					{
-						scheme = new PTMScheme<T>(cXSegments, cYSegments, stepX, stepY, mParams.isChebysh, eps, pFuncKsi);
+						scheme = new PTMScheme<T>(rectData, mParams.isChebysh, eps, pFuncKsi);
 						if (mParams.isChebysh) maxIters = scheme.maxIterations();
 					}
 					else if (idxScheme == SchemeCPUEnum.GradientDescent)
 					{
-						scheme = new GradientDescentScheme<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi, eps);
+						scheme = new GradientDescentScheme<T>(rectData, pFuncKsi, eps);
 					}
 					else if (idxScheme == SchemeCPUEnum.MinimumResidual)
 					{
-						scheme = new MinimumResidualScheme<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi, eps);
+						scheme = new MinimumResidualScheme<T>(rectData, pFuncKsi, eps);
 					}
 					else if (idxScheme == SchemeCPUEnum.ConjugateGradient)
 					{
-						scheme = new ConjugateGradientScheme<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi, eps);
+						scheme = new ConjugateGradientScheme<T>(rectData, pFuncKsi, eps);
 					}
 					else if (idxScheme == SchemeCPUEnum.BiconjugateGradient)
 					{
-						if (mParams.isBiconjugateStabilized) scheme = new BiconjugateStabilizedScheme<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi);
-						else scheme = new BiconjugateScheme<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi, eps);
+						if (mParams.isBiconjugateStabilized) scheme = new BiconjugateStabilizedScheme<T>(rectData, pFuncKsi);
+						else scheme = new BiconjugateScheme<T>(rectData, pFuncKsi, eps);
 					}
 					else if (idxScheme == SchemeCPUEnum.Chebishev3Layers)
 					{
-						scheme = new ChebyshevIterationScheme<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi, eps);
+						scheme = new ChebyshevIterationScheme<T>(rectData, pFuncKsi, eps);
 					}
 					else if (idxScheme == SchemeCPUEnum.MultiGrid)
 					{
-						scheme = new MultiGridScheme<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi, eps);
+						scheme = new MultiGridScheme<T>(rectData, pFuncKsi, eps);
 					}
 					else if (idxScheme == SchemeCPUEnum.CompleteReduction)
 					{
-						int cCores = optionsParallel.MaxDegreeOfParallelism;
 						List<BitmapSource> lst = visualize ? lstBitmap : null;
 						if (mParams.methodCR == CRMethodsEnum.SN)
 						{
-							scheme = new CyclicReductionSamarskiiNikolaevScheme<T>(cXSegments, cYSegments, stepX, stepY, cCores, pFuncKsi, lst, fCreateBitmap, reportProgress);
-							//scheme = new CyclicReductionSamarskiiNikolaevScheme_BothPrecision<T>(cXSegments, cYSegments, stepX, stepY, true, cCores, pFuncKsi, lst, fCreateBitmap, reportProgress);
+							scheme = new CyclicReductionSamarskiiNikolaevScheme<T>(rectData, pFuncKsi, lst, fCreateBitmap, reportProgress);
+							//scheme = new CyclicReductionSamarskiiNikolaevScheme_BothPrecision<T>(rectData, true, pFuncKsi, lst, fCreateBitmap, reportProgress);
 						}
 						else
 						{
-							scheme = new CyclicReductionBunemanScheme<T>(cXSegments, cYSegments, stepX, stepY, cCores, pFuncKsi, lst, fCreateBitmap, reportProgress);
+							scheme = new CyclicReductionBunemanScheme<T>(rectData, pFuncKsi, lst, fCreateBitmap, reportProgress);
 						}
 						maxIters = scheme.maxIterations();
 					}
 					else if (idxScheme == SchemeCPUEnum.VariablesSeparation)
 					{
-						int cCores = optionsParallel.MaxDegreeOfParallelism;
 						List<BitmapSource> lst = visualize ? lstBitmap : null;
 						if (mParams.methodVarSep != VarSepMethodsEnum.FFT)
 						{
-							scheme = new VariablesSeparationSchemeProgonka<T>(cXSegments, cYSegments, stepX, stepY, cCores, pFuncKsi, mParams.methodVarSep, lst, fCreateBitmap, reportProgress);
+							scheme = new VariablesSeparationSchemeProgonka<T>(rectData, pFuncKsi, mParams.methodVarSep, lst, fCreateBitmap, reportProgress);
 						}
 						else
 						{
-							scheme = new VariablesSeparationSchemeNoProgonka<T>(cXSegments, cYSegments, stepX, stepY, cCores, pFuncKsi, lst, fCreateBitmap, reportProgress);
+							scheme = new VariablesSeparationSchemeNoProgonka<T>(rectData, pFuncKsi, lst, fCreateBitmap, reportProgress);
 						}
 						maxIters = scheme.maxIterations();
 					}
 					else if (idxScheme == SchemeCPUEnum.IncompleteReduction)
 					{
-						int cCores = optionsParallel.MaxDegreeOfParallelism;
 						List<BitmapSource> lst = visualize ? lstBitmap : null;
-						scheme = new FACRScheme<T>(cXSegments, cYSegments, stepX, stepY, cCores, pFuncKsi, mParams.paramL, lst, fCreateBitmap, reportProgress);
+						scheme = new FACRScheme<T>(rectData, pFuncKsi, mParams.paramL, lst, fCreateBitmap, reportProgress);
 						maxIters = scheme.maxIterations();
 					}
 					else if (idxScheme == SchemeCPUEnum.MatrixProgonka)
 					{
-						int cCores = optionsParallel.MaxDegreeOfParallelism;
 						List<BitmapSource> lst = visualize ? lstBitmap : null;
-						scheme = new MatrixProgonkaScheme<T>(cXSegments, cYSegments, stepX, stepY, cCores, pFuncKsi, lst, fCreateBitmap, reportProgress);
+						scheme = new MatrixProgonkaScheme<T>(rectData, pFuncKsi, lst, fCreateBitmap, reportProgress);
 						maxIters = scheme.maxIterations();
 					}
 					else if (idxScheme == SchemeCPUEnum.Marching)
 					{
-						int cCores = optionsParallel.MaxDegreeOfParallelism;
 						List<BitmapSource> lst = visualize ? lstBitmap : null;
-						scheme = new MarchingScheme<T>(cXSegments, cYSegments, stepX, stepY, cCores, pFuncKsi, mParams.paramL, lst, fCreateBitmap, reportProgress);
+						scheme = new MarchingScheme<T>(rectData, pFuncKsi, mParams.paramL, lst, fCreateBitmap, reportProgress);
 						maxIters = scheme.maxIterations();
 					}
 				}
@@ -340,59 +337,58 @@ namespace VLP2D.Model
 					SchemeOCLEnum idxScheme = (SchemeOCLEnum)platformScheme.idxScheme;
 					if (idxScheme == SchemeOCLEnum.SimpleIterationOCL)
 					{
-						scheme = new SimpleIterationSchemeOCL<T>(cXSegments, cYSegments, stepX, stepY, mParams.isChebysh, eps, pFuncKsi, mParams.platform, mParams.device);
+						scheme = new SimpleIterationSchemeOCL<T>(rectData, mParams.isChebysh, eps, pFuncKsi, mParams.platform, mParams.device);
 						if (mParams.isChebysh) maxIters = scheme.maxIterations();
 					}
 					else if (idxScheme == SchemeOCLEnum.SlidingIterationOCL)
 					{
-						scheme = new RelaxationSchemeOCL<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi, true, false, eps, mParams.platform, mParams.device);
+						scheme = new RelaxationSchemeOCL<T>(rectData, pFuncKsi, true, false, eps, mParams.platform, mParams.device);
 					}
 					else if (idxScheme == SchemeOCLEnum.SOROCL)
 					{
-						scheme = new RelaxationSchemeOCL<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi, false, false, eps, mParams.platform, mParams.device);
+						scheme = new RelaxationSchemeOCL<T>(rectData, pFuncKsi, false, false, eps, mParams.platform, mParams.device);
 					}
 					else if (idxScheme == SchemeOCLEnum.SplittingOCL)
 					{
-						scheme = new SplittingSchemeOCL<T>(cXSegments, cYSegments, stepX, stepY, eps, pFuncKsi, mParams.platform, mParams.device);
+						scheme = new SplittingSchemeOCL<T>(rectData, eps, pFuncKsi, mParams.platform, mParams.device);
 					}
 					else if (idxScheme == SchemeOCLEnum.VarDirOCL)
 					{
-						scheme = new VarDirSchemeOCL<T>(cXSegments, cYSegments, stepX, stepY, eps, pFuncKsi, mParams.isJordan, mParams.platform, mParams.device);
+						scheme = new VarDirSchemeOCL<T>(rectData, eps, pFuncKsi, mParams.isJordan, mParams.platform, mParams.device);
 						if (mParams.isJordan) maxIters = scheme.maxIterations();
 					}
 					else if (idxScheme == SchemeOCLEnum.MultiGridOCL)
 					{
-						scheme = new MultiGridSchemeOCL<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi, eps, mParams.platform, mParams.device);
+						scheme = new MultiGridSchemeOCL<T>(rectData, pFuncKsi, eps, mParams.platform, mParams.device);
 					}
 					else if (idxScheme == SchemeOCLEnum.CompleteReductionOCL)
 					{
 						List<BitmapSource> lst = visualize ? lstBitmap : null;
-						scheme = new CyclicReductionSchemeOCL<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi, lst, fCreateBitmap, reportProgress, mParams.platform, mParams.device);
+						scheme = new CyclicReductionSchemeOCL<T>(rectData, pFuncKsi, lst, fCreateBitmap, reportProgress, mParams.platform, mParams.device);
 						maxIters = scheme.maxIterations();
 					}
 					else if (idxScheme == SchemeOCLEnum.VariablesSeparationOCL)
 					{
 						if (mParams.isVarSepProgonka)
 						{
-							scheme = new VariablesSeparationSchemeProgonkaOCL<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi, optionsParallel, mParams.platform, mParams.device, reportProgress);
+							scheme = new VariablesSeparationSchemeProgonkaOCL<T>(rectData, pFuncKsi, mParams.platform, mParams.device, reportProgress);
 						}
 						else
 						{
-							scheme = new VariablesSeparationSchemeNoProgonkaOCL<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi, optionsParallel, mParams.platform, mParams.device, reportProgress);
+							scheme = new VariablesSeparationSchemeNoProgonkaOCL<T>(rectData, pFuncKsi, mParams.platform, mParams.device, reportProgress);
 						}
 						maxIters = scheme.maxIterations();
 					}
 					else if (idxScheme == SchemeOCLEnum.IncompleteReductionOCL)
 					{
 						List<BitmapSource> lst = visualize ? lstBitmap : null;
-						scheme = new FACRSchemeOCL<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi, mParams.paramL, optionsParallel, lst, fCreateBitmap, mParams.platform, mParams.device, reportProgress);
+						scheme = new FACRSchemeOCL<T>(rectData, pFuncKsi, mParams.paramL, lst, fCreateBitmap, mParams.platform, mParams.device, reportProgress);
 						maxIters = scheme.maxIterations();
 					}
 					else if (idxScheme == SchemeOCLEnum.MarchingOCL)
 					{
-						int cCores = optionsParallel.MaxDegreeOfParallelism;
 						List<BitmapSource> lst = visualize ? lstBitmap : null;
-						scheme = new MarchingSchemeOCL<T>(cXSegments, cYSegments, stepX, stepY, cCores, pFuncKsi, mParams.paramL, lst, fCreateBitmap, mParams.platform, mParams.device, reportProgress);
+						scheme = new MarchingSchemeOCL<T>(rectData, pFuncKsi, mParams.paramL, lst, fCreateBitmap, mParams.platform, mParams.device, reportProgress);
 						maxIters = scheme.maxIterations();
 					}
 				}
@@ -401,53 +397,52 @@ namespace VLP2D.Model
 					SchemeCUDAEnum idxScheme = (SchemeCUDAEnum)platformScheme.idxScheme;
 					if (idxScheme == SchemeCUDAEnum.SimpleIterationCUDA)
 					{
-						scheme = new SimpleIterationSchemeCU<T>(cXSegments, cYSegments, stepX, stepY, mParams.isChebysh, eps, pFuncKsi, mParams.cudaDevice);
+						scheme = new SimpleIterationSchemeCU<T>(rectData, mParams.isChebysh, eps, pFuncKsi, mParams.cudaDevice);
 						if (mParams.isChebysh) maxIters = scheme.maxIterations();
 					}
 					else if (idxScheme == SchemeCUDAEnum.SlidingIterationCUDA)
 					{
-						scheme = new RelaxationSchemeCU<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi, true, eps, mParams.cudaDevice);
+						scheme = new RelaxationSchemeCU<T>(rectData, pFuncKsi, true, eps, mParams.cudaDevice);
 					}
 					else if (idxScheme == SchemeCUDAEnum.SORCUDA)
 					{
-						scheme = new RelaxationSchemeCU<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi, false, eps, mParams.cudaDevice);
+						scheme = new RelaxationSchemeCU<T>(rectData, pFuncKsi, false, eps, mParams.cudaDevice);
 					}
 					else if (idxScheme == SchemeCUDAEnum.SplittingCUDA)
 					{
-						scheme = new SplittingSchemeCU<T>(cXSegments, cYSegments, stepX, stepY, eps, pFuncKsi, mParams.cudaDevice);
+						scheme = new SplittingSchemeCU<T>(rectData, eps, pFuncKsi, mParams.cudaDevice);
 					}
 					else if (idxScheme == SchemeCUDAEnum.VarDirCUDA)
 					{
-						scheme = new VarDirSchemeCU<T>(cXSegments, cYSegments, stepX, stepY, eps, pFuncKsi, mParams.isJordan, mParams.cudaDevice);
+						scheme = new VarDirSchemeCU<T>(rectData, eps, pFuncKsi, mParams.isJordan, mParams.cudaDevice);
 						if (mParams.isJordan) maxIters = scheme.maxIterations();
 					}
 					else if (idxScheme == SchemeCUDAEnum.MultiGridCUDA)
 					{
-						scheme = new MultiGridSchemeCU<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi, eps, mParams.cudaDevice);
+						scheme = new MultiGridSchemeCU<T>(rectData, pFuncKsi, eps, mParams.cudaDevice);
 					}
 					else if (idxScheme == SchemeCUDAEnum.CompleteReductionCUDA)
 					{
 						List<BitmapSource> lst = visualize ? lstBitmap : null;
-						scheme = new CyclicReductionSchemeCU<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi, lst, fCreateBitmap, reportProgress, mParams.cudaDevice);
+						scheme = new CyclicReductionSchemeCU<T>(rectData, pFuncKsi, lst, fCreateBitmap, reportProgress, mParams.cudaDevice);
 						maxIters = scheme.maxIterations();
 					}
 					else if (idxScheme == SchemeCUDAEnum.VariablesSeparationCUDA)
 					{
-						if (mParams.isVarSepProgonka) scheme = new VariablesSeparationSchemeProgonkaCU<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi, optionsParallel, reportProgress, mParams.cudaDevice);
-						else scheme = new VariablesSeparationSchemeNoProgonkaCU<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi, optionsParallel, reportProgress, mParams.cudaDevice);
+						if (mParams.isVarSepProgonka) scheme = new VariablesSeparationSchemeProgonkaCU<T>(rectData, pFuncKsi, reportProgress, mParams.cudaDevice);
+						else scheme = new VariablesSeparationSchemeNoProgonkaCU<T>(rectData, pFuncKsi, reportProgress, mParams.cudaDevice);
 						maxIters = scheme.maxIterations();
 					}
 					else if (idxScheme == SchemeCUDAEnum.FACRCUDA)
 					{
 						List<BitmapSource> lst = visualize ? lstBitmap : null;
-						scheme = new FACRSchemeCU<T>(cXSegments, cYSegments, stepX, stepY, pFuncKsi, mParams.paramL, lst, fCreateBitmap, optionsParallel, reportProgress, mParams.cudaDevice);
+						scheme = new FACRSchemeCU<T>(rectData, pFuncKsi, mParams.paramL, lst, fCreateBitmap, reportProgress, mParams.cudaDevice);
 						maxIters = scheme.maxIterations();
 					}
 					else if (idxScheme == SchemeCUDAEnum.MarchingCUDA)
 					{
-						int cCores = optionsParallel.MaxDegreeOfParallelism;
 						List<BitmapSource> lst = visualize ? lstBitmap : null;
-						scheme = new MarchingSchemeCU<T>(cXSegments, cYSegments, stepX, stepY, cCores, pFuncKsi, mParams.paramL, lst, fCreateBitmap, reportProgress, mParams.cudaDevice);
+						scheme = new MarchingSchemeCU<T>(rectData, pFuncKsi, mParams.paramL, lst, fCreateBitmap, reportProgress, mParams.cudaDevice);
 						maxIters = scheme.maxIterations();
 					}
 				}
@@ -476,8 +471,7 @@ namespace VLP2D.Model
 
 		public void changeMultiThread(bool isMultiThread)
 		{
-			optionsParallel.MaxDegreeOfParallelism = isMultiThread ? degreeOfParallelism : 1;
-			GridIterator.optionsParallel = optionsParallel;
+			GridIterator.optionsParallel.MaxDegreeOfParallelism = isMultiThread ? Environment.ProcessorCount : 1;
 		}
 
 		public void changeVisualParams(bool visualize1, int stepHeatMap1)
@@ -538,8 +532,8 @@ namespace VLP2D.Model
 			if (scheme == null) return ;
 
 			T min = T.MaxValue, max = T.MinValue;
-			scheme.initTopBottomBorders(stepX, stepY,pFuncBottom, pFuncTop, pFuncBoundary, ref min, ref max);
-			scheme.initLeftRightBorders(stepX, stepY, pFuncLeft, pFuncRight, pFuncBoundary, ref min, ref max);
+			scheme.initTopBottomBorders(pFuncBottom, pFuncTop, pFuncBoundary, ref min, ref max);
+			scheme.initLeftRightBorders(pFuncLeft, pFuncRight, pFuncBoundary, ref min, ref max);
 
 			if (isSchemeUseInitialInterpolation(platformScheme))
 			{
@@ -600,7 +594,7 @@ namespace VLP2D.Model
 
 					if (methodParams.isCompareAnalytic && pFuncAnalytic != null)
 					{
-						scheme.calculateDifference(unDiff, stepX, stepY, pFuncAnalytic, ref fMinDiff, ref fMaxDiff, null, null);
+						scheme.calculateDifference(unDiff, pFuncAnalytic, ref fMinDiff, ref fMaxDiff, null, null);
 						T coef = T.One;//diffCoef();
 						MinMaxF minmax = new MinMaxF(float.CreateTruncating(fMinDiff * coef), float.CreateTruncating(fMaxDiff * coef));
 						Adapter2D<float> adapter = new Adapter2D<float>(unDiff.GetUpperBound(0) + 1, unDiff[0].GetUpperBound(0) + 1, (i, j) => float.CreateTruncating(unDiff[i][j] * coef));
@@ -621,11 +615,12 @@ namespace VLP2D.Model
 				scheme.pointsMinMax(ref min, ref max);//picture palette can change !
 				bms = scheme.createBitmap(new MinMaxF(float.CreateTruncating(min), float.CreateTruncating(max)), fCreateBitmap);
 				if (bms != null) lstBitmap.Add(bms);
+				scheme.useAction(actionSurface);
 
 				if (methodParams.isCompareAnalytic && pFuncAnalytic != null)
 				{
 					progressHeaderEvent?.Invoke(Resources.strComparing);
-					scheme.calculateDifference(unDiff, stepX, stepY, pFuncAnalytic, ref fMinDiff, ref fMaxDiff, calculateDifferenceCanceled, reportProgress);
+					scheme.calculateDifference(unDiff, pFuncAnalytic, ref fMinDiff, ref fMaxDiff, calculateDifferenceCanceled, reportProgress);
 					T coef = T.One;//diffCoef();
 					MinMaxF minmax = new MinMaxF(float.CreateTruncating(fMinDiff * coef), float.CreateTruncating(fMaxDiff * coef));
 					Adapter2D<float> adapter = new Adapter2D<float>(unDiff.GetUpperBound(0) + 1, unDiff[0].GetUpperBound(0) + 1, (i, j) => float.CreateTruncating(unDiff[i][j] * coef));

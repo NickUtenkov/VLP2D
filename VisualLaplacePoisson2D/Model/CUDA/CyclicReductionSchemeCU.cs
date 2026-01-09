@@ -15,7 +15,7 @@ using static VLP2D.Common.UtilsPict;
 
 namespace VLP2D.Model
 {
-	class CyclicReductionSchemeCU<T> : CyclicReductionBaseSchemeCU<T> where T : struct, INumber<T>, IMinMaxValue<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>
+	class CyclicReductionSchemeCU<T> : CyclicReductionBaseSchemeCU<T> where T : unmanaged, INumber<T>, IMinMaxValue<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		CudaDeviceVariable<T> alphaCoefs, alfa, vv, diagonalElements;
 		CudaDeviceVariable<T> ac, sum;
@@ -27,8 +27,8 @@ namespace VLP2D.Model
 		int alfaSize;
 		int[] alfaOffsets, alfaCounts;
 
-		public CyclicReductionSchemeCU(int cXSegments, int cYSegments, T stepXIn, T stepYIn, Func<T, T, T> fKsi, List<BitmapSource> lstBitmap0, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn, int cudaDevice) :
-			base(cXSegments, cYSegments, stepXIn, stepYIn, fKsi, lstBitmap0, fCreateBitmap, reportProgressIn, cudaDevice)
+		public CyclicReductionSchemeCU(RectangleData<T> rectData, Func<T, T, T> fKsi, List<BitmapSource> lstBitmap0, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn, int cudaDevice) :
+			base(rectData, fKsi, lstBitmap0, fCreateBitmap, reportProgressIn, cudaDevice)
 		{
 			if ((N2 & 1) == 0) throw new System.Exception("CyclicReductionSchemeCU N2 should be odd");
 			progressSteps = (n - 1) + n;//(n - 1) - direct steps, n - reverse steps

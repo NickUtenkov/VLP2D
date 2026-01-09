@@ -18,12 +18,7 @@
 		<!-- Results -->
 		<!-- Using Grid to utilize all remaining height and width -->
 		<Grid Grid.Column="1">
-			<Grid.RowDefinitions>
-				<RowDefinition Height="25"/>
-				<RowDefinition Height="*"/>
-			</Grid.RowDefinitions>
-			<TextBlock Grid.Row="0" Text="{x:Static loc:Resources.strResults}" FontSize="18" IsHitTestVisible="false" HorizontalAlignment="Center"/>
-			<outputView:VLPRectangleOutputView Grid.Row="1" x:Name="VLPRectangleOutputView"/>
+			<outputView:VLPRectangleOutputView x:Name="VLPRectangleOutputView"/>
 		</Grid>
 	</Grid>
 </UserControl>

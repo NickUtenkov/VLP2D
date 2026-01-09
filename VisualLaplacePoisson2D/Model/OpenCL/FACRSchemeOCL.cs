@@ -13,11 +13,10 @@ using static VLP2D.Common.UtilsPict;
 
 namespace VLP2D.Model
 {
-	class FACRSchemeOCL<T> : Direct1DNoBoundariesScheme<T>, IScheme<T> where T : struct, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>
+	class FACRSchemeOCL<T> : Direct1DNoBoundariesScheme<T>, IScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		readonly int N1, N2, ML, L;
 		Func<T, T, T> fKsi;
-		T stepX, stepY;
 		Action<double> reportProgress;
 		float curProgress;
 		bool iterationsCanceled;
@@ -35,17 +34,15 @@ namespace VLP2D.Model
 		int allFFTWorkSize;
 		T[] unShow;
 
-		public FACRSchemeOCL(int cXSegments, int cYSegments, T stepX, T stepY, Func<T, T, T> fKsi, int paramL, ParallelOptions optionsParallel, List<BitmapSource> lstBitmap, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, PlatformOCL platform, DeviceOCL device, Action<double> reportProgressIn)
-			: base(cXSegments - 1, cYSegments - 1, stepX, stepY, optionsParallel)
+		public FACRSchemeOCL(RectangleData<T> rectData, Func<T, T, T> fKsi, int paramL, List<BitmapSource> lstBitmap, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, PlatformOCL platform, DeviceOCL device, Action<double> reportProgressIn)
+			: base(rectData.cXSegments - 1, rectData.cYSegments - 1, rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY)
 		{
 			UtilsCL.checkDeviceSupportDouble<T>(device);
-			N1 = cXSegments;
-			N2 = cYSegments;//is 2^x
+			N1 = rectData.cXSegments;
+			N2 = rectData.cYSegments;//is 2^x
 			L = paramL;
 			ML = N2 >> L;
 			this.fKsi = fKsi;
-			this.stepX = stepX;
-			this.stepY = stepY;
 
 			reportProgress = reportProgressIn;
 			curProgress = 0;
@@ -127,7 +124,7 @@ namespace VLP2D.Model
 
 		void initRigthHandSide(Func<T, T, T> fKsi, T stepX, T stepY)
 		{
-			iterate((i, j) => un[i * dim2 + j] += fKsi(stepX * T.CreateTruncating(i + 1), stepY * T.CreateTruncating(j + 1)));
+			iterate((i, j) => un[i * dim2 + j] += fKsi(xMin + stepX * T.CreateTruncating(i + 1), yMin + stepY * T.CreateTruncating(j + 1)));
 		}
 
 		protected void showProgress(float count)

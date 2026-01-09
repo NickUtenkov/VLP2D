@@ -9,7 +9,8 @@
       "VisualLaplacePoisson2D/1.0.0": {
         "dependencies": {
           "Microsoft.CSharp": "4.7.0",
-          "System.Runtime.CompilerServices.Unsafe": "6.1.0",
+          "Microsoft.Xaml.Behaviors.Wpf": "1.1.135",
+          "System.Runtime.CompilerServices.Unsafe": "6.1.2",
           "CudaFFT": "12.4.56.0",
           "ELW.Library.Math": "0.0.0.0",
           "ManagedCuda": "12.4.56.0",
@@ -25,7 +26,15 @@
         }
       },
       "Microsoft.CSharp/4.7.0": {},
-      "System.Runtime.CompilerServices.Unsafe/6.1.0": {},
+      "Microsoft.Xaml.Behaviors.Wpf/1.1.135": {
+        "runtime": {
+          "lib/net6.0-windows7.0/Microsoft.Xaml.Behaviors.dll": {
+            "assemblyVersion": "1.1.0.0",
+            "fileVersion": "1.1.135.29210"
+          }
+        }
+      },
+      "System.Runtime.CompilerServices.Unsafe/6.1.2": {},
       "CudaFFT/12.4.56.0": {
         "runtime": {
           "CudaFFT.dll": {
@@ -73,12 +82,19 @@
       "path": "microsoft.csharp/4.7.0",
       "hashPath": "microsoft.csharp.4.7.0.nupkg.sha512"
     },
-    "System.Runtime.CompilerServices.Unsafe/6.1.0": {
+    "Microsoft.Xaml.Behaviors.Wpf/1.1.135": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-5o/HZxx6RVqYlhKSq8/zronDkALJZUT2Vz0hx43f0gwe8mwlM0y2nYlqdBwLMzr262Bwvpikeb/yEwkAa5PADg==",
-      "path": "system.runtime.compilerservices.unsafe/6.1.0",
-      "hashPath": "system.runtime.compilerservices.unsafe.6.1.0.nupkg.sha512"
+      "sha512": "sha512-r8qBEXmQfORso2+MVHnt8PSH4761zJ0SIxgQTSEDVLU97EN2FZdG6/ZCYUPhQy+OrPKgnpYBCAs3PS6Bs7wRsg==",
+      "path": "microsoft.xaml.behaviors.wpf/1.1.135",
+      "hashPath": "microsoft.xaml.behaviors.wpf.1.1.135.nupkg.sha512"
+    },
+    "System.Runtime.CompilerServices.Unsafe/6.1.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-2hBr6zdbIBTDE3EhK7NSVNdX58uTK6iHW/P/Axmm9sl1xoGSLqDvMtpecn226TNwHByFokYwJmt/aQQNlO5CRw==",
+      "path": "system.runtime.compilerservices.unsafe/6.1.2",
+      "hashPath": "system.runtime.compilerservices.unsafe.6.1.2.nupkg.sha512"
     },
     "CudaFFT/12.4.56.0": {
       "type": "reference",

@@ -39,7 +39,7 @@ namespace VLP2D.Common
 			}
 		}
 
-		public static void calculateDifference<T>(Adapter2D<T> adapter, T[][] unDiff, T stpX, T stpY, Func<T, T, T> funcAnalitic, ref T valMin, ref T valMax, Func<bool> canceled, Action<double> reportProgress) where T : INumber<T>, IMinMaxValue<T>//, IMultiplyOperators<T, double, T>
+		public static void calculateDifference<T>(Adapter2D<T> adapter, T[][] unDiff, T xMin, T yMin, T stpX, T stpY, Func<T, T, T> funcAnalitic, ref T valMin, ref T valMax, Func<bool> canceled, Action<double> reportProgress) where T : INumber<T>, IMinMaxValue<T>//, IMultiplyOperators<T, double, T>
 		{
 			ulong progressSteps = (ulong)((adapter.dim1 - 1) * (adapter.dim2 - 1)), curProgress = 0;//UInt64
 			reportProgress?.Invoke(0);
@@ -51,10 +51,10 @@ namespace VLP2D.Common
 			T incX = stpX * T.CreateTruncating(cLoop);
 			Parallel.For(0, cLoop, GridIterator.optionsParallel, (core) =>
 			{
-				T x = stpX * T.CreateTruncating(1 + core);
+				T x = xMin + stpX * T.CreateTruncating(1 + core);
 				for (int i = 1 + core; i < adapter.dim1; i += cLoop)
 				{
-					T y = T.Zero;
+					T y = yMin;
 					for (int j = 1; j < adapter.dim2; j++)
 					{
 						y += stpY;

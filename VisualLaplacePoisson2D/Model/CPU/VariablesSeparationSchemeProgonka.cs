@@ -19,7 +19,7 @@ using static VLP2D.Common.UtilsPict;
 
 namespace VLP2D.Model
 {
-	class VariablesSeparationSchemeProgonka<T> : VariablesSeparationScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IHyperbolicFunctions<T>, IPowerFunctions<T>
+	class VariablesSeparationSchemeProgonka<T> : VariablesSeparationScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IHyperbolicFunctions<T>, IPowerFunctions<T>, IExponentialFunctions<T>
 	{
 		T[][] alpha;
 		VarSepMethodsEnum method;
@@ -34,8 +34,8 @@ namespace VLP2D.Model
 		T _4 = T.CreateTruncating(4.0);
 		T _N2;
 
-		public VariablesSeparationSchemeProgonka(int cXSegments, int cYSegments, T stepX, T stepY, int cCores, Func<T, T, T> fKsi, VarSepMethodsEnum method, List<BitmapSource> lstBitmap0, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn) :
-			base(cXSegments, cYSegments, stepX, stepY, cCores, fKsi, lstBitmap0, fCreateBitmap, reportProgressIn)
+		public VariablesSeparationSchemeProgonka(RectangleData<T> rectData, Func<T, T, T> fKsi, VarSepMethodsEnum method, List<BitmapSource> lstBitmap0, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn) :
+			base(rectData, fKsi, lstBitmap0, fCreateBitmap, reportProgressIn)
 		{
 #if MeetingProgonka
 			if ((N1 & 1) == 0 && (method == VarSepMethodsEnum.Progonka)) throw new System.Exception("VariablesSeparationSchemeProgonka N1 should be odd");
@@ -44,6 +44,7 @@ namespace VLP2D.Model
 #else
 			alfaUB = N1 - 2;
 #endif
+			int cCores = GridIterator.optionsParallel.MaxDegreeOfParallelism;
 			alpha = new T[cCores][];
 			for (int i = 0; i < cCores; i++) alpha[i] = new T[alfaUB + 1];
 
@@ -82,6 +83,7 @@ namespace VLP2D.Model
 
 			elapsed = getExecutedSeconds(stopWatchEL, () => fftN2Calculate(_2 / _N2, addPictureAction));//[SNR] p.195, (39), same as [SNR] p.192, (27); using vk2i[i, k] & fn[i, k]
 			listElapsedAdd("FFT2_2", elapsed);
+			//UtilsPrint.printJaggedArray(un, "{0,7:0.000}", nameof(action.Method.Name));
 
 			return T.Zero;//epsilon, == 0 because no more iterations(only one iteration - direct(not iteration) method)
 		}
@@ -104,7 +106,8 @@ namespace VLP2D.Model
 			T mult = stepX2 / stepY2;//[SNR] p.194, (34);[SNR] p.195, (38)
 			AlfaСonvergentUpperBoundEpsilon αCC = new AlfaСonvergentUpperBoundEpsilon(UtilsEps.epsilon<T>());
 
-			Parallel.For(0, cCores, optionsParallel, (core, loopState) =>//coreUnordered(made for more cash frendly in low mem cases)
+			int cCores = GridIterator.optionsParallel.MaxDegreeOfParallelism;
+			Parallel.For(0, cCores, GridIterator.optionsParallel, (core, loopState) =>//coreUnordered(made for more cash frendly in low mem cases)
 			{
 				for (int k2 = 1 + core; k2 < N2; k2 += cCores)
 				{
@@ -170,23 +173,23 @@ namespace VLP2D.Model
 				for (int i = 0; i <= N1 - 2; i++) un[i + 1][colRes] = ut[i];
 #endif
 #else
-			//using 0 instead of un[0, colRes] which is NOT zero(boundary value), but assumed to be zero(transferred value to near boundary node)
-			un[1, colRes] = (stepX2 * un[1, colRes]) * alfa[0];
-			for (int i = 2; i <= N1 - 1; i++) un[i, colRes] = (stepX2 * un[i, colRes] + un[i - 1, colRes]) * alfa[i - 1];//[SNR] p.195(40);
+			//using 0 instead of un[0][colRes] which is NOT zero(boundary value), but assumed to be zero(transferred value to near boundary node)
+			un[1][colRes] = (stepX2 * un[1][colRes]) * alfa[ind(0)];
+			for (int i = 2; i <= N1 - 1; i++) un[i][colRes] = (stepX2 * un[i][colRes] + un[i - 1][colRes]) * alfa[ind(i - 1)];//[SNR] p.195(40);
 
-			//using 0 instead of un[N1, colRes] which is NOT zero(boundary value), but assumed to be zero(transferred value to near boundary node)
-			//not adding zero value for un[N1 - 1, colRes] += alfa[N1 - 2] * un[N1 - 0, colRes]; because un[N1 - 0, colRes] == 0
-			for (int i = N1 - 2; i >= 1; i--) un[i, colRes] += alfa[i - 1] * un[i + 1, colRes];//[SNR] p.195(40);
+			//using 0 instead of un[N1][colRes] which is NOT zero(boundary value), but assumed to be zero(transferred value to near boundary node)
+			//not adding zero value for un[N1 - 1][colRes] += alfa[ind(N1 - 2)] * un[N1 - 0][colRes]; because un[N1 - 0][colRes] == 0
+			for (int i = N1 - 2; i >= 1; i--) un[i][colRes] += alfa[ind(i - 1)] * un[i + 1][colRes];//[SNR] p.195(40);
 #endif
 			}
 		}
 
-		void reduction(int progressPercent)//CPU_double
+		void reduction(int progressPercent)
 		{
 			int rem2 = (N2 - 1) / progressPercent;
 			T pi2N2 = T.Pi / _N2 / _2;
 			T mult = stepX2 * _4 / stepY2;//[SNR] p.194, (34);[SNR] p.195, (38)
-			int cCores = optionsParallel.MaxDegreeOfParallelism;
+			int cCores = GridIterator.optionsParallel.MaxDegreeOfParallelism;
 			T[,] a = new T[cCores, N1 + 1];
 			T[,] b = new T[cCores, N1 + 1];
 			T[,] d = new T[cCores, N1 + 1];
@@ -197,7 +200,7 @@ namespace VLP2D.Model
 
 			calculateNArray();
 
-			Parallel.For(0, cCores, optionsParallel, (core, loopState) =>
+			Parallel.For(0, cCores, GridIterator.optionsParallel, (core, loopState) =>
 			{
 				for (int k2 = 1 + core; k2 < N2; k2 += cCores)
 				{
@@ -294,10 +297,11 @@ namespace VLP2D.Model
 			int rem2 = N2 / progressPercent;
 			T piDivN2 = T.Pi / _N2;
 			T mult = stepX2 / stepY2;//[SNR] p.194, (34);[SNR] p.195, (38)
+			int cCores = GridIterator.optionsParallel.MaxDegreeOfParallelism;
 			T[][] rhs = new T[cCores][];
 			for (int i = 0; i < cCores; i++) rhs[i] = new T[N1];//zero index not used
 
-			Parallel.For(0, cCores, optionsParallel, (core, loopState) =>//coreUnordered(made for more cash frendly in low mem cases)
+			Parallel.For(0, cCores, GridIterator.optionsParallel, (core, loopState) =>//coreUnordered(made for more cash frendly in low mem cases)
 			{
 				for (int k2 = 1 + core; k2 < N2; k2 += cCores)
 				{

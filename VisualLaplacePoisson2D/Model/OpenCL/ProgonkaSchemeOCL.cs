@@ -7,7 +7,7 @@ using VLP2D.Common;
 
 namespace VLP2D.Model
 {
-	class ProgonkaSchemeOCL<T> : Iterative1DScheme<T>, IScheme<T> where T : struct, INumber<T>, IRootFunctions<T>, IPowerFunctions<T>, IMinMaxValue<T>
+	class ProgonkaSchemeOCL<T> : Iterative1DScheme<T>, IScheme<T> where T : unmanaged, INumber<T>, IRootFunctions<T>, IPowerFunctions<T>, IMinMaxValue<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>
 	{
 		protected T stepX2, stepY2, dt;
 		protected T[] alphaX, alphaY;//beta is placed to result
@@ -60,13 +60,14 @@ namespace VLP2D.Model
 	for (int j = dimY - 2; j > 0; j--) unDst[i + j] = HP(unDst[i + j] + alphaY[j] * unDst[i + j + 1]);
 }}";
 
-		public ProgonkaSchemeOCL(int cXSegments1, int cYSegments1, T stepX, T stepY, Func<T, T, T> fKsi, T epsIn, PlatformOCL platform, DeviceOCL device, bool bProgonkaFixedIters)
+		public ProgonkaSchemeOCL(RectangleData<T> rectData, Func<T, T, T> fKsi, T epsIn, PlatformOCL platform, DeviceOCL device, bool bProgonkaFixedIters) :
+			base(rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY)
 		{
 			UtilsCL.checkDeviceSupportDouble<T>(device);
 			stepX2 = stepX * stepX;
 			stepY2 = stepY * stepY;
-			cXSegments = cXSegments1;
-			cYSegments = cYSegments1;
+			cXSegments = rectData.cXSegments;
+			cYSegments = rectData.cYSegments;
 
 			dimX = cXSegments + 1;
 			dimY = cYSegments + 1;
@@ -86,7 +87,7 @@ namespace VLP2D.Model
 
 			if (fKsi != null)
 			{
-				GridIterator.iterate(dimX - 1, dimY - 1, (i, j) => un[i * dimY + j] = fKsi(stepX * T.CreateTruncating(i), stepY * T.CreateTruncating(j)));
+				GridIterator.iterate(dimX - 1, dimY - 1, (i, j) => un[i * dimY + j] = fKsi(xMin + stepX * T.CreateTruncating(i), yMin + stepY * T.CreateTruncating(j)));
 				fn = new BufferOCL<T>(commands.Context, MemoryFlagsOCL.ReadOnly | MemoryFlagsOCL.CopyHostPointer, un);
 			}
 

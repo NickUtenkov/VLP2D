@@ -10,12 +10,12 @@ using VLP2D.Common;
 
 namespace VLP2D.Model
 {
-	class VarDirSchemeCU<T> : ProgonkaSchemeCU<T> where T : struct, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>
+	class VarDirSchemeCU<T> : ProgonkaSchemeCU<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		JordanSpeedup<T> jrd;
 
-		public VarDirSchemeCU(int cXSegments, int cYSegments, T stepX, T stepY, T eps, Func<T, T, T> fKsi, bool isJordan, int cudaDevice) :
-			base(cXSegments, cYSegments, stepX, stepY, eps, isJordan, fKsi, cudaDevice)
+		public VarDirSchemeCU(RectangleData<T> rectData, T eps, Func<T, T, T> fKsi, bool isJordan, int cudaDevice) :
+			base(rectData, eps, isJordan, fKsi, cudaDevice)
 		{
 			bool equalSteps = T.Abs(stepX - stepY) < T.Min(stepX, stepY) / T.CreateTruncating(100);
 

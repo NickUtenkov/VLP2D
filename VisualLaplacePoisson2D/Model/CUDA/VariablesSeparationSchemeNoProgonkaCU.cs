@@ -11,7 +11,7 @@ using static VLP2D.Common.UtilsElapsed;
 
 namespace VLP2D.Model
 {
-	class VariablesSeparationSchemeNoProgonkaCU<T> : VariablesSeparationSchemeCU<T> where T : struct, INumber<T>, IMinMaxValue<T>, ITrigonometricFunctions<T>
+	class VariablesSeparationSchemeNoProgonkaCU<T> : VariablesSeparationSchemeCU<T> where T : unmanaged, INumber<T>, IMinMaxValue<T>, ITrigonometricFunctions<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>
 	{
 		int maxFFTN1Vectors;
 		int allFFTN1WorkSize;
@@ -20,8 +20,8 @@ namespace VLP2D.Model
 		VariablesSeparationFFTN1CU<T> fftN1;
 		Dictionary<int, CudaFFTPlanMany> plans;
 
-		public VariablesSeparationSchemeNoProgonkaCU(int cXSegments, int cYSegments, T stepX, T stepY, Func<T, T, T> fKsi, ParallelOptions optionsParallel, Action<double> reportProgressIn, int cudaDevice) :
-			base(cXSegments, cYSegments, stepX, stepY, fKsi, optionsParallel, reportProgressIn, cudaDevice)
+		public VariablesSeparationSchemeNoProgonkaCU(RectangleData<T> rectData, Func<T, T, T> fKsi, Action<double> reportProgressIn, int cudaDevice) :
+			base(rectData, fKsi, reportProgressIn, cudaDevice)
 		{
 			allFFTN2WorkSize = dim1;
 			allFFTN1WorkSize = dim2;

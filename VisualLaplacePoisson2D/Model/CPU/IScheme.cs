@@ -16,15 +16,16 @@ namespace VLP2D.Model
 	interface ISchemeInit<T>
 	{
 		(int, int) getArrayDimensions();
-		void initTopBottomBorders(T deltaX, T deltaY, Func<T, T> funcBottom, Func<T, T> funcTop, Func<T, T, T> funcBorder, ref T valMin, ref T valMax);
-		void initLeftRightBorders(T deltaX, T deltaY, Func<T, T> funcLeft, Func<T, T> funcRight, Func<T, T, T> funcBorder, ref T valMin, ref T valMax);
+		void initTopBottomBorders(Func<T, T> funcBottom, Func<T, T> funcTop, Func<T, T, T> funcBorder, ref T valMin, ref T valMax);
+		void initLeftRightBorders(Func<T, T> funcLeft, Func<T, T> funcRight, Func<T, T, T> funcBorder, ref T valMin, ref T valMax);
 		void pointsMinMax(ref T valMin, ref T valMax);
 		void initInitialIterationMean(T val);
 		void initInitialIterationArithmeticMean();
 		void initInitialIterationLinearInterpolation();
 		void initInitialIterationWeightLinearInterpolation();
 		BitmapSource createBitmap(MinMaxF minMax, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap);
-		void calculateDifference(T[][] unDiff, T stpX, T stpY, Func<T, T, T> funcAnalitic, ref T fMin, ref T fMax, Func<bool> canceled, Action<double> reportProgress);
+		void useAction(Action action);
+		void calculateDifference(T[][] unDiff, Func<T, T, T> funcAnalitic, ref T fMin, ref T fMax, Func<bool> canceled, Action<double> reportProgress);
 
 		IterationsKind iterationsKind();
 		string getElapsedInfo();

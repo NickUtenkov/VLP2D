@@ -10,14 +10,17 @@ namespace VLP2D.Model
 {
 	public class Direct2DNoBoundariesScheme<T> where T : INumber<T>, IMinMaxValue<T>
 	{
+		protected T xMin, yMin, stepX, stepY;
 		protected T[,] un;
 		protected int dim1, dim2;
 		protected T stepX2, stepY2;
-		protected ParallelOptions optionsParallel;
 
-		public Direct2DNoBoundariesScheme(int rows, int cols, T stepX, T stepY, ParallelOptions optionsParallel)
+		public Direct2DNoBoundariesScheme(int rows, int cols, T xMin, T yMin, T stepX, T stepY)
 		{
-			this.optionsParallel = optionsParallel;
+			this.xMin = xMin;
+			this.yMin = yMin;
+			this.stepX = stepX;
+			this.stepY = stepY;
 
 			stepX2 = stepX * stepX;
 			stepY2 = stepY * stepY;
@@ -37,20 +40,20 @@ namespace VLP2D.Model
 			return (dim1 + 1, dim2 + 1);
 		}
 
-		public void initTopBottomBorders(T deltaX, T deltaY, Func<T, T> funcBottom, Func<T, T> funcTop, Func<T, T, T> funcBorder, ref T valMin, ref T valMax)
+		public void initTopBottomBorders(Func<T, T> funcBottom, Func<T, T> funcTop, Func<T, T, T> funcBorder, ref T valMin, ref T valMax)
 		{
-			T yMax = deltaY * T.CreateTruncating(dim2 + 1);
+			T yMax = yMin + stepY * T.CreateTruncating(dim2 + 1);
 			int cLoop = Math.Min(dim1, GridIterator.optionsParallel.MaxDegreeOfParallelism);
 			T[] fMin = new T[cLoop], fMax = new T[cLoop];
 			Array.Fill(fMin, valMin);
 			Array.Fill(fMax, valMax);
-			T incX = deltaX * T.CreateTruncating(cLoop);
+			T incX = stepX * T.CreateTruncating(cLoop);
 			Parallel.For(0, cLoop, GridIterator.optionsParallel, (core) =>
 			{
-				T x = deltaX * T.CreateTruncating(core + 1);
+				T x = xMin + stepX * T.CreateTruncating(core + 1);
 				for (int i = 0 + core; i < dim1; i += cLoop)
 				{
-					T val0 = ((funcBottom != null) ? funcBottom(x) : funcBorder(x, T.Zero));
+					T val0 = ((funcBottom != null) ? funcBottom(x) : funcBorder(x, yMin));
 					un[i, 0] += (val0 / stepY2);//[SNR] p.190, (19)
 
 					T val1 = ((funcTop != null) ? funcTop(x) : funcBorder(x, yMax));
@@ -69,20 +72,20 @@ namespace VLP2D.Model
 			}
 		}
 
-		public void initLeftRightBorders(T deltaX, T deltaY, Func<T, T> funcLeft, Func<T, T> funcRight, Func<T, T, T> funcBorder, ref T valMin, ref T valMax)
+		public void initLeftRightBorders(Func<T, T> funcLeft, Func<T, T> funcRight, Func<T, T, T> funcBorder, ref T valMin, ref T valMax)
 		{
-			T xMax = deltaX * T.CreateTruncating(dim1 + 1);
+			T xMax = xMin + stepX * T.CreateTruncating(dim1 + 1);
 			int cLoop = Math.Min(dim2, GridIterator.optionsParallel.MaxDegreeOfParallelism);
 			T[] fMin = new T[cLoop], fMax = new T[cLoop];
 			Array.Fill(fMin, valMin);
 			Array.Fill(fMax, valMax);
-			T incY = deltaY * T.CreateTruncating(cLoop);
+			T incY = stepY * T.CreateTruncating(cLoop);
 			Parallel.For(0, cLoop, GridIterator.optionsParallel, (core) =>
 			{
-				T y = deltaY * T.CreateTruncating(core + 1);
+				T y = yMin + stepY * T.CreateTruncating(core + 1);
 				for (int j = 0 + core; j < dim2; j += cLoop)
 				{
-					T val0 = (funcLeft != null) ? funcLeft(y) : funcBorder(T.Zero, y);
+					T val0 = (funcLeft != null) ? funcLeft(y) : funcBorder(xMin, y);
 					un[0, j] += (val0 / stepX2);//[SNR] p.190, (19)
 
 					T val1 = (funcRight != null) ? funcRight(y) : funcBorder(xMax, y);
@@ -114,16 +117,21 @@ namespace VLP2D.Model
 			return fCreateBitmap(true, minMax, new Adapter2D<float>(dim1, dim2, (i, j) => float.CreateTruncating(un[i, j])));
 		}
 
-		public void calculateDifference(T[][] unDiff, T stpX, T stpY, Func<T, T, T> funcAnalitic, ref T valMin, ref T valMax, Func<bool> canceled, Action<double> reportProgress)
+		public void useAction(Action action)
+		{
+			action();
+		}
+
+		public void calculateDifference(T[][] unDiff, Func<T, T, T> funcAnalitic, ref T valMin, ref T valMax, Func<bool> canceled, Action<double> reportProgress)
 		{
 			(int, int) dims = getArrayDimensions();
 			Adapter2D<T> adapter = new Adapter2D<T>(dims.Item1, dims.Item2, (i, j) => un[i - 1, j - 1]);
-			UtilsDiff.calculateDifference(adapter, unDiff, stpX, stpY, funcAnalitic, ref valMin, ref valMax, canceled, reportProgress);
+			UtilsDiff.calculateDifference(adapter, unDiff, xMin, yMin, stepX, stepY, funcAnalitic, ref valMin, ref valMax, canceled, reportProgress);
 		}
 
 		public void iterate(Action<int, int> func)
 		{
-			Parallel.For(0, dim1, optionsParallel, i =>
+			Parallel.For(0, dim1, GridIterator.optionsParallel, i =>
 			{
 				for (int j = 0; j < dim2; j++)
 				{

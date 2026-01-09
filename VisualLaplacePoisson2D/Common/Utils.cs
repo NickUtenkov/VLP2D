@@ -27,6 +27,16 @@ namespace VLP2D.Common
 			}
 		}
 
+		public struct MyRange<T>
+		{
+			public T min, max;
+			public MyRange(T min, T max)
+			{
+				this.min = min;
+				this.max = max;
+			}
+		}
+
 		static Utils()
 		{
 			List<Color> palColors = new List<Color>

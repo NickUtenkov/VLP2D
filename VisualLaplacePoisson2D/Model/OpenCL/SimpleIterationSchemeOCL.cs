@@ -6,7 +6,7 @@ using VLP2D.Common;
 
 namespace VLP2D.Model
 {
-	class SimpleIterationSchemeOCL<T> : Iterative1DScheme<T>, IScheme<T> where T : struct, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>
+	class SimpleIterationSchemeOCL<T> : Iterative1DScheme<T>, IScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		T tau, stepX2, stepY2, eps;
 		T[] tauk;//chebish
@@ -24,11 +24,12 @@ namespace VLP2D.Model
 		int[] flag = [0];
 		BufferOCL<int> flagOCL;
 
-		public SimpleIterationSchemeOCL(int cXSegments, int cYSegments, T stepX, T stepY, bool isChebyshIn, T epsIn, Func<T, T, T> fKsi, PlatformOCL platform, DeviceOCL device)
+		public SimpleIterationSchemeOCL(RectangleData<T> rectData, bool isChebyshIn, T epsIn, Func<T, T, T> fKsi, PlatformOCL platform, DeviceOCL device) :
+			base(rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY)
 		{
 			UtilsCL.checkDeviceSupportDouble<T>(device);
-			dimX = cXSegments + 1;
-			dimY = cYSegments + 1;
+			dimX = rectData.cXSegments + 1;
+			dimY = rectData.cYSegments + 1;
 			stepX2 = stepX * stepX;
 			stepY2 = stepY * stepY;
 			eps = epsIn;
@@ -45,7 +46,7 @@ namespace VLP2D.Model
 				outputOCL = new BufferOCL<T>(commands.Context, MemoryFlagsOCL.ReadWrite, un.Length);
 				if (fKsi != null)
 				{
-					GridIterator.iterate(dimX - 1, dimY - 1, (i, j) => un[i * dimY + j] = fKsi(stepX * T.CreateTruncating(i), stepY * T.CreateTruncating(j)));
+					GridIterator.iterate(dimX - 1, dimY - 1, (i, j) => un[i * dimY + j] = fKsi(xMin + stepX * T.CreateTruncating(i), yMin + stepY * T.CreateTruncating(j)));
 					fnOCL = new BufferOCL<T>(commands.Context, MemoryFlagsOCL.ReadOnly | MemoryFlagsOCL.CopyHostPointer, un);
 				}
 			}
@@ -117,8 +118,8 @@ namespace VLP2D.Model
 			if (isChebysh)
 			{//[SNR] p.300
 				T _4 = T.CreateTruncating(4);
-				T arg1 = T.Pi / T.CreateTruncating(2.0 * cXSegments);
-				T arg2 = T.Pi / T.CreateTruncating(2.0 * cYSegments);
+				T arg1 = T.Pi / T.CreateTruncating(2.0 * rectData.cXSegments);
+				T arg2 = T.Pi / T.CreateTruncating(2.0 * rectData.cYSegments);
 
 				T sin1 = T.Sin(arg1);
 				T sin2 = T.Sin(arg2);

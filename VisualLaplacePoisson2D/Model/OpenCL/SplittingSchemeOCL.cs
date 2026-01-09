@@ -5,10 +5,10 @@ using VLP2D.Common;
 
 namespace VLP2D.Model
 {
-	class SplittingSchemeOCL<T> : ProgonkaSchemeOCL<T> where T : struct, INumber<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>
+	class SplittingSchemeOCL<T> : ProgonkaSchemeOCL<T> where T : unmanaged, INumber<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, ILogarithmicFunctions<T>, ITrigonometricFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
-		public SplittingSchemeOCL(int cXSegments, int cYSegments, T stepX, T stepY, T eps, Func<T, T, T> fKsi, PlatformOCL platform, DeviceOCL device) :
-			base(cXSegments, cYSegments, stepX, stepY, fKsi, eps, platform, device, false)
+		public SplittingSchemeOCL(RectangleData<T> rectData, T eps, Func<T, T, T> fKsi, PlatformOCL platform, DeviceOCL device) :
+			base(rectData, fKsi, eps, platform, device, false)
 		{//[S_VVCM] p.258 (27) σ₁,σ₂
 			T σ1 = T.CreateTruncating(0.5);
 			T σ2 = T.CreateTruncating(0.5);

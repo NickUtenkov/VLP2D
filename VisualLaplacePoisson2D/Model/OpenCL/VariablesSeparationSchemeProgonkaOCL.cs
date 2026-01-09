@@ -12,7 +12,7 @@ using static VLP2D.Common.UtilsElapsed;
 
 namespace VLP2D.Model
 {
-	class VariablesSeparationSchemeProgonkaOCL<T> : VariablesSeparationSchemeOCL<T> where T : struct, INumber<T>, ITrigonometricFunctions<T>, IMinMaxValue<T>, ILogarithmicFunctions<T>
+	class VariablesSeparationSchemeProgonkaOCL<T> : VariablesSeparationSchemeOCL<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, IMinMaxValue<T>, ILogarithmicFunctions<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>, IRootFunctions<T>
 	{
 		IFFTOCL<T> fft2;//for use inside fftN2
 		VariablesSeparationFFTN2OCL<T> fftN2;
@@ -20,8 +20,8 @@ namespace VLP2D.Model
 		VariablesSeparationProgonkaOCL<T> progonka;
 		int[] fftWorkSizes, progonkaWorkSizes;
 
-		public VariablesSeparationSchemeProgonkaOCL(int cXSegments, int cYSegments, T stepX, T stepY, Func<T, T, T> fKsi, ParallelOptions optionsParallel, PlatformOCL platform, DeviceOCL device, Action<double> reportProgressIn) :
-			base(cXSegments, cYSegments, stepX, stepY, fKsi, optionsParallel, platform, device, reportProgressIn)
+		public VariablesSeparationSchemeProgonkaOCL(RectangleData<T> rectData, Func<T, T, T> fKsi, PlatformOCL platform, DeviceOCL device, Action<double> reportProgressIn) :
+			base(rectData, fKsi, platform, device, reportProgressIn)
 		{
 			allFFTN2WorkSize = dim1;//number of vectors of size FFTN2DataSize(see below)
 			int allProgonkaWorkSize = dim2;//number of vectors of size progonkaDataSize(see below)

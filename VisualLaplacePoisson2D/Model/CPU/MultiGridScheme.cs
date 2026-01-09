@@ -5,11 +5,11 @@ using VLP2D.Common;
 
 namespace VLP2D.Model
 {
-	public class MultiGridScheme<T> : Iterative2DScheme<T>, IScheme<T> where T : INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>
+	class MultiGridScheme<T> : Iterative2DScheme<T>, IScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		T[,] fn;
 		T[][,] u0, rhs, res;//right hand side, residual
-		T[] stepX, stepY;
+		T[] arStepsX, arStepsY;
 		MultiGridSlidingIteration<T> smoother;
 		readonly int nLevels;
 		T eps;
@@ -20,39 +20,40 @@ namespace VLP2D.Model
 		T _4 = T.CreateTruncating(4);
 		const int countSmoothingIterations = 3;//if 1 then no convergence in rectangle cases, if 2 then precision is less 10^3 times
 
-		public MultiGridScheme(int cXSegments, int cYSegments, T stepXIn, T stepYIn, Func<T, T, T> fKsi, T eps)
+		public MultiGridScheme(RectangleData<T> rectData, Func<T, T, T> fKsi, T eps) :
+			base(rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY)
 		{
 			if (fKsi != null)
 			{
-				fn = new T[cXSegments + 1, cYSegments + 1];//exterior points are not used
-				GridIterator.iterate(cXSegments, cYSegments, (i, j) => fn[i, j] = -fKsi(stepXIn * T.CreateTruncating(i), stepYIn * T.CreateTruncating(j)));
+				fn = new T[rectData.cXSegments + 1, rectData.cYSegments + 1];//exterior points are not used
+				GridIterator.iterate(rectData.cXSegments, rectData.cYSegments, (i, j) => fn[i, j] = -fKsi(xMin + stepX * T.CreateTruncating(i), yMin + stepY * T.CreateTruncating(j)));
 			}
 
 			this.eps = eps;
 
-			int nLevelsX = (int)Math.Log(cXSegments, 2);
-			int nLevelsY = (int)Math.Log(cYSegments, 2);
+			int nLevelsX = (int)Math.Log(rectData.cXSegments, 2);
+			int nLevelsY = (int)Math.Log(rectData.cYSegments, 2);
 			nLevels = Math.Min(nLevelsX, nLevelsY);
 
 			u0 = new T[nLevels][,];
 			rhs = new T[nLevels][,];
 			res = new T[nLevels][,];
-			stepX = new T[nLevels];
-			stepY = new T[nLevels];
+			arStepsX = new T[nLevels];
+			arStepsY = new T[nLevels];
 			smoother = new MultiGridSlidingIteration<T>();
 
-			int cSegsX = cXSegments;//is 2^n
-			int cSegsY = cYSegments;//is 2^n
-			T lngX = stepXIn * T.CreateTruncating(cSegsX);
-			T lngY = stepYIn * T.CreateTruncating(cSegsY);
+			int cSegsX = rectData.cXSegments;//is 2^n
+			int cSegsY = rectData.cYSegments;//is 2^n
+			T lngX = stepX * T.CreateTruncating(cSegsX);
+			T lngY = stepY * T.CreateTruncating(cSegsY);
 			for (int i = 0; i < nLevels; i++)
 			{
 				u0[i] = new T[cSegsX + 1, cSegsY + 1];
 				rhs[i] = (i == 0) && (fn != null) ? fn : new T[cSegsX + 1, cSegsY + 1];
 				res[i] = (i < nLevels - 1) ? new T[cSegsX + 1, cSegsY + 1] : null;
-				stepX[i] = lngX / T.CreateTruncating(cSegsX);
-				stepY[i] = lngY / T.CreateTruncating(cSegsY);
-				smoother.addParameters(u0[i], (i == 0) ? fn : rhs[i], stepX[i], stepY[i]);
+				arStepsX[i] = lngX / T.CreateTruncating(cSegsX);
+				arStepsY[i] = lngY / T.CreateTruncating(cSegsY);
+				smoother.addParameters(u0[i], (i == 0) ? fn : rhs[i], arStepsX[i], arStepsY[i]);
 
 				cSegsX /= 2;
 				cSegsY /= 2;
@@ -85,8 +86,8 @@ namespace VLP2D.Model
 			u0 = null;
 			rhs = null;
 			res = null;
-			stepX = null;
-			stepY = null;
+			arStepsX = null;
+			arStepsY = null;
 			smoother = null;
 		}
 
@@ -137,8 +138,8 @@ namespace VLP2D.Model
 			T[,] un = u0[level];
 			T[,] re = res[level];
 
-			T stepX2 = stepX[level] * stepX[level];
-			T stepY2 = stepY[level] * stepY[level];
+			T stepX2 = arStepsX[level] * arStepsX[level];
+			T stepY2 = arStepsY[level] * arStepsY[level];
 			GridIterator.iterate(re.GetUpperBound(0), re.GetUpperBound(1), (i, j) => re[i, j] = rh[i, j] - UtilsOpLap.operatorLaplaceXY(un, i, j, stepX2, stepY2, _2));
 		}
 

@@ -10,7 +10,7 @@ using static VLP2D.Common.UtilsElapsed;
 
 namespace VLP2D.Model
 {
-	class VariablesSeparationSchemeProgonkaCU<T> : VariablesSeparationSchemeCU<T> where T : struct, INumber<T>, IMinMaxValue<T>, ITrigonometricFunctions<T>, IRootFunctions<T>, ILogarithmicFunctions<T>
+	class VariablesSeparationSchemeProgonkaCU<T> : VariablesSeparationSchemeCU<T> where T : unmanaged, INumber<T>, IMinMaxValue<T>, ITrigonometricFunctions<T>, IRootFunctions<T>, ILogarithmicFunctions<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		IFFTCU<T> fft2;
 		VariablesSeparationFFTN2CU<T> fftN2;
@@ -19,8 +19,8 @@ namespace VLP2D.Model
 		int maxProgonkaVectors;
 		int allProgonkaWorkSize;
 
-		public VariablesSeparationSchemeProgonkaCU(int cXSegments, int cYSegments, T stepX, T stepY, Func<T, T, T> fKsi, ParallelOptions optionsParallel, Action<double> reportProgressIn, int cudaDevice) :
-			base(cXSegments, cYSegments, stepX, stepY, fKsi, optionsParallel,reportProgressIn, cudaDevice)
+		public VariablesSeparationSchemeProgonkaCU(RectangleData<T> rectData, Func<T, T, T> fKsi, Action<double> reportProgressIn, int cudaDevice) :
+			base(rectData, fKsi, reportProgressIn, cudaDevice)
 		{
 			allFFTN2WorkSize = dim1;//number of vectors of size FFTN2DataSize(see below)
 			allProgonkaWorkSize = dim2;//number of vectors

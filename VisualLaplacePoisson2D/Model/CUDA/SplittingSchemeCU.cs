@@ -9,10 +9,10 @@ using VLP2D.Common;
 
 namespace VLP2D.Model
 {
-	class SplittingSchemeCU<T> : ProgonkaSchemeCU<T> where T : struct, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>
+	class SplittingSchemeCU<T> : ProgonkaSchemeCU<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
-		public SplittingSchemeCU(int cXSegments, int cYSegments, T stepX, T stepY, T eps, Func<T, T, T> fKsi, int cudaDevice) :
-			base(cXSegments, cYSegments, stepX, stepY, eps, false, fKsi, cudaDevice)
+		public SplittingSchemeCU(RectangleData<T> rectData, T eps, Func<T, T, T> fKsi, int cudaDevice) :
+			base(rectData, eps, false, fKsi, cudaDevice)
 		{//S_VVCM p.258 (27) σ₁,σ₂
 			T σ1 = T.CreateTruncating(0.5);
 			T σ2 = T.CreateTruncating(0.5);

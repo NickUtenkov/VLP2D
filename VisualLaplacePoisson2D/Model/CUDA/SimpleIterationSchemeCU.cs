@@ -5,7 +5,7 @@ using VLP2D.Common;
 
 namespace VLP2D.Model
 {
-	class SimpleIterationSchemeCU<T> : Iterative1DScheme<T>, IScheme<T> where T : struct, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>
+	class SimpleIterationSchemeCU<T> : Iterative1DScheme<T>, IScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		T[] un;
 		T[] tauk;//chebish
@@ -20,10 +20,11 @@ namespace VLP2D.Model
 		bool uuChanged = false;
 		T _2 = T.CreateTruncating(2);
 
-		public SimpleIterationSchemeCU(int cXSegments, int cYSegments, T stepX, T stepY, bool isChebyshIn, T epsIn, Func<T, T, T> fKsi, int cudaDevice)
+		public SimpleIterationSchemeCU(RectangleData<T> rectData, bool isChebyshIn, T epsIn, Func<T, T, T> fKsi, int cudaDevice) :
+			base(rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY)
 		{
-			dimX = cXSegments + 1;
-			dimY = cYSegments + 1;
+			dimX = rectData.cXSegments + 1;
+			dimY = rectData.cYSegments + 1;
 
 			T stepX2 = stepX * stepX;
 			T stepY2 = stepY * stepY;
@@ -40,7 +41,7 @@ namespace VLP2D.Model
 				outputCU = new CudaDeviceVariable<T>(dimX * dimY);
 				if (fKsi != null)
 				{
-					GridIterator.iterate(dimX - 1, dimY - 1, (i, j) => un[i * dimY + j] = fKsi(stepX * T.CreateTruncating(i), stepY * T.CreateTruncating(j)));
+					GridIterator.iterate(dimX - 1, dimY - 1, (i, j) => un[i * dimY + j] = fKsi(xMin + stepX * T.CreateTruncating(i), yMin + stepY * T.CreateTruncating(j)));
 					fnCU = un;//instead of 'new CudaDeviceVariable' and CopyToDevice
 				}
 			}
@@ -117,8 +118,8 @@ namespace VLP2D.Model
 			if (isChebysh)
 			{//[SNR] p.300
 				T _4 = T.CreateTruncating(4);
-				T arg1 = T.Pi / (_2 * T.CreateTruncating(cXSegments));
-				T arg2 = T.Pi / (_2 * T.CreateTruncating(cYSegments));
+				T arg1 = T.Pi / (_2 * T.CreateTruncating(rectData.cXSegments));
+				T arg2 = T.Pi / (_2 * T.CreateTruncating(rectData.cYSegments));
 
 				T sin1 = T.Sin(arg1);
 				T sin2 = T.Sin(arg2);

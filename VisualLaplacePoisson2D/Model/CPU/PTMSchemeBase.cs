@@ -12,7 +12,8 @@ namespace VLP2D.Model
 		protected T[,] un1, fn;
 		protected bool isChebysh;
 
-		public PTMSchemeBase(int cXSegments, int cYSegments, T stepX, T stepY, bool isChebyshIn, T epsIn, Func<T, T, T> fKsi)
+		public PTMSchemeBase(int cXSegments, int cYSegments, T xMin, T yMin, T stepX, T stepY, bool isChebyshIn, T epsIn, Func<T, T, T> fKsi) :
+			base(xMin, yMin, stepX, stepY)
 		{
 			un0 = new T[cXSegments + 1, cYSegments + 1];
 			un1 = new T[cXSegments + 1, cYSegments + 1];
@@ -23,7 +24,7 @@ namespace VLP2D.Model
 				int upper1 = un0.GetUpperBound(0);
 				int upper2 = un0.GetUpperBound(1);
 				fn = new T[upper1 + 1, upper2 + 1];//exterior points are not used
-				GridIterator.iterate(upper1, upper2, (i, j) => fn[i, j] = fKsi(stepX * T.CreateTruncating(i), stepY * T.CreateTruncating(j)));
+				GridIterator.iterate(upper1, upper2, (i, j) => fn[i, j] = fKsi(xMin + stepX * T.CreateTruncating(i), yMin + stepY * T.CreateTruncating(j)));
 			}
 
 			stepX2 = stepX * stepX;

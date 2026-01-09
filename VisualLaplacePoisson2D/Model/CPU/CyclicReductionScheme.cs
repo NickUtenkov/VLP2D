@@ -13,17 +13,15 @@ using static VLP2D.Common.UtilsPict;
 
 namespace VLP2D.Model
 {
-	class CyclicReductionScheme<T> : DirectJagged2Scheme<T>, IScheme<T> where T : struct, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>
+	class CyclicReductionScheme<T> : DirectJagged2Scheme<T>, IScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		protected T[][] alfa;
-		protected T stepX, stepY, bCoef;
+		protected T bCoef;
 		Func<T, T, T> fKsi;
-		protected readonly bool isMultiThread;
 		protected readonly int n;
 		protected List<BitmapSource> lstBitmap;
 		protected readonly Func<bool, UtilsPict.MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap;
 		protected float[][] unShow;
-		protected readonly ParallelOptions optionsParallel;
 		protected Action<double> reportProgress;
 		protected int progressSteps, curProgress;
 		bool iterationsCanceled;
@@ -34,15 +32,11 @@ namespace VLP2D.Model
 #endif
 		T _2 = T.CreateTruncating(2);
 
-		public CyclicReductionScheme(int cXSegments, int cYSegments, T stepXIn, T stepYIn, int cCores, Func<T, T, T> fKsiIn, List<BitmapSource> lstBitmap, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap,Action<double> reportProgressIn) :
-			base(cXSegments + 1, cYSegments + 1, fKsiIn == null)
+		public CyclicReductionScheme(RectangleData<T> rectData, Func<T, T, T> fKsiIn, List<BitmapSource> lstBitmap, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap,Action<double> reportProgressIn) :
+			base(rectData.cXSegments + 1, rectData.cYSegments + 1, rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY, fKsiIn == null)
 		{
-			stepX = stepXIn;
-			stepY = stepYIn;
 			bCoef = stepY * stepY / (stepX * stepX);//[SNR] p.145, (4), steps are reversed
 			reportProgress = reportProgressIn;
-			isMultiThread = cCores > 1;
-			optionsParallel = new ParallelOptions() { MaxDegreeOfParallelism = cCores };
 
 			n = (int)uint.CreateTruncating(T.Log(T.CreateTruncating(N1), T.CreateTruncating(2)));//N1 is 2^x
 
@@ -50,8 +44,8 @@ namespace VLP2D.Model
 			this.fCreateBitmap = fCreateBitmap;
 			if (lstBitmap != null)
 			{
-				unShow = new float[cXSegments + 1][];
-				for (int i = 0; i < cXSegments + 1; i++) unShow[i] = new float[cYSegments + 1];
+				unShow = new float[rectData.cXSegments + 1][];
+				for (int i = 0; i < rectData.cXSegments + 1; i++) unShow[i] = new float[rectData.cYSegments + 1];
 			}
 
 			progressSteps = 0;
@@ -77,7 +71,7 @@ namespace VLP2D.Model
 		protected void initRigthHandSide(T[][] fj)
 		{
 			T stepX2 = stepX * stepX;//steps are reversed
-			if (fKsi != null) GridIterator.iterate(fj.GetUpperBound(0), fj[0].GetUpperBound(0), (i, j) => { fj[i][j] = stepX2 * fKsi(stepX * T.CreateTruncating(i), stepY * T.CreateTruncating(j)); });//[SNR] p.123 (8)
+			if (fKsi != null) GridIterator.iterate(fj.GetUpperBound(0), fj[0].GetUpperBound(0), (i, j) => { fj[i][j] = stepX2 * fKsi(xMin + stepX * T.CreateTruncating(i), yMin + stepY * T.CreateTruncating(j)); });//[SNR] p.123 (8)
 		}
 
 		protected void transferBottomTopToInterior(T[][] fj)

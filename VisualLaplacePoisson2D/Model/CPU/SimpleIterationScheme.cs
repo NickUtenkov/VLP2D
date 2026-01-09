@@ -5,7 +5,7 @@ using VLP2D.Common;
 
 namespace VLP2D.Model
 {
-	class SimpleIterationScheme<T> : Iterative2DScheme<T>, IScheme<T> where T : INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IExponentialFunctions<T>
+	class SimpleIterationScheme<T> : Iterative2DScheme<T>, IScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IExponentialFunctions<T>, IPowerFunctions<T>, IHyperbolicFunctions<T>
 	{
 		readonly T tau, stepX2, stepY2, eps;
 		T[] tauk;//chebish
@@ -19,14 +19,15 @@ namespace VLP2D.Model
 		readonly T _2 = T.CreateTruncating(2);
 		readonly T _4 = T.CreateTruncating(4);
 
-		public SimpleIterationScheme(int cXSegments, int cYSegments, T stepX, T stepY, bool isChebyshIn, T epsIn, Func<T, T, T> fKsi)
+		public SimpleIterationScheme(RectangleData<T> rectData, bool isChebyshIn, T epsIn, Func<T, T, T> fKsi) :
+			base(rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY)
 		{
-			un0 = new T[cXSegments + 1, cYSegments + 1];
-			un1 = new T[cXSegments + 1, cYSegments + 1];
+			un0 = new T[rectData.cXSegments + 1, rectData.cYSegments + 1];
+			un1 = new T[rectData.cXSegments + 1, rectData.cYSegments + 1];
 			stepX2 = stepX * stepX;
 			stepY2 = stepY * stepY;
-			upper1 = cXSegments;
-			upper2 = cYSegments;
+			upper1 = rectData.cXSegments;
+			upper2 = rectData.cYSegments;
 			eps = epsIn;
 			isChebysh = isChebyshIn;
 			bool equalSteps = T.Abs(stepX - stepY) < T.Min(stepX , stepY) / T.CreateTruncating(100);//less than one percent
@@ -49,13 +50,13 @@ namespace VLP2D.Model
 				}
 				else actionCalculate = funcPoi;
 				fn = new T[upper1 + 1, upper2 + 1];//exterior points are not used
-				GridIterator.iterate(upper1, upper2, (i, j) => fn[i, j] = fKsi(stepX * T.CreateTruncating(i), stepY * T.CreateTruncating(j)));
+				GridIterator.iterate(upper1, upper2, (i, j) => fn[i, j] = fKsi(xMin + stepX * T.CreateTruncating(i), yMin + stepY * T.CreateTruncating(j)));
 			}
 
 			if (isChebysh)
 			{//[SNR] p.300
-				T arg1 = T.Pi / (_2 * T.CreateTruncating(cXSegments));
-				T arg2 = T.Pi / (_2 * T.CreateTruncating(cYSegments));
+				T arg1 = T.Pi / (_2 * T.CreateTruncating(rectData.cXSegments));
+				T arg2 = T.Pi / (_2 * T.CreateTruncating(rectData.cYSegments));
 
 				T sin1 = T.Sin(arg1);
 				T sin2 = T.Sin(arg2);

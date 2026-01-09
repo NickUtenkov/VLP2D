@@ -13,7 +13,7 @@ using static VLP2D.Common.UtilsPict;
 
 namespace VLP2D.Model
 {
-	class CyclicReductionSamarskiiNikolaevScheme<T> : CyclicReductionScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>
+	class CyclicReductionSamarskiiNikolaevScheme<T> : CyclicReductionScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		T[][] p;//==un
 		T[][] ac;
@@ -21,13 +21,14 @@ namespace VLP2D.Model
 		T[] alphaCoeffs;
 		T _05 = T.CreateTruncating(0.5);
 
-		public CyclicReductionSamarskiiNikolaevScheme(int cXSegments, int cYSegments, T stepXIn, T stepYIn, int cCores, Func<T, T, T> fKsi, List<BitmapSource> lstBitmap0, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn) :
-			base(cXSegments, cYSegments, stepXIn, stepYIn, cCores, fKsi, lstBitmap0, fCreateBitmap, reportProgressIn)
+		public CyclicReductionSamarskiiNikolaevScheme(RectangleData<T> rectData, Func<T, T, T> fKsi, List<BitmapSource> lstBitmap0, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn) :
+			base(rectData, fKsi, lstBitmap0, fCreateBitmap, reportProgressIn)
 		{
 			//originally(in math description - [SNR] p.138) p is (N1 - 1)*(N2 - 1) size, but share the same memory with un(which is solution)
 			//here it is interior part of un, which is (N1 + 1)*(N2 + 1) size
 			//so it is used with shifted by 1 indeces
 			p = un;
+			int cCores = GridIterator.optionsParallel.MaxDegreeOfParallelism;
 #if ExtraThreads
 			int arSize = cCores > 1 ? (cCores - 1) * cCores : 1;
 #else
@@ -75,8 +76,8 @@ namespace VLP2D.Model
 				int m = 1 << (k - 1);//2ᵏ⁻¹
 				int _2ᵏ = m << 1;
 				int allVectors = N1 / _2ᵏ - 1;//1·2ᵏ, 2·2ᵏ, 3·2ᵏ, ..., (N1 - 2ᵏ); == 1,2,3,...,(N1 / 2ᵏ - 1) · 2ᵏ, [SNR] p.138, (21)
-				int cCores0 = int.Min(optionsParallel.MaxDegreeOfParallelism, allVectors);
-				Parallel.For(0, cCores0, optionsParallel, (core0) =>
+				int cCores0 = int.Min(GridIterator.optionsParallel.MaxDegreeOfParallelism, allVectors);
+				Parallel.For(0, cCores0, GridIterator.optionsParallel, (core0) =>
 				{
 					for (int idx = core0 + 0; idx < allVectors; idx += cCores0)
 					{
@@ -109,8 +110,8 @@ namespace VLP2D.Model
 				int m = 1 << (k - 1);//2ᵏ⁻¹
 				int _2ᵏ = m << 1;
 				int allVectors = N1 / _2ᵏ;//1·2ᵏ⁻¹, 3·2ᵏ⁻¹, 5·2ᵏ⁻¹, ..., (N1 - 2ᵏ⁻¹); == 1,3,5,...,(N1 / 2ᵏ⁻¹ - 1) · 2ᵏ⁻¹, [SNR] p.138, (24)
-				int cCores0 = int.Min(optionsParallel.MaxDegreeOfParallelism, allVectors);
-				Parallel.For(0, cCores0, optionsParallel, (core0) =>
+				int cCores0 = int.Min(GridIterator.optionsParallel.MaxDegreeOfParallelism, allVectors);
+				Parallel.For(0, cCores0, GridIterator.optionsParallel, (core0) =>
 				{
 					for (int idx = core0 + 0; idx < allVectors; idx += cCores0)
 					{
@@ -145,9 +146,9 @@ namespace VLP2D.Model
 #if ExtraThreads
 		void directOrReverse(bool bDirect, int allVectors, int core0, int k, int m, int j)
 		{
-			int cCores = allVectors < optionsParallel.MaxDegreeOfParallelism ? optionsParallel.MaxDegreeOfParallelism : 1;
+			int cCores = allVectors < GridIterator.optionsParallel.MaxDegreeOfParallelism ? GridIterator.optionsParallel.MaxDegreeOfParallelism : 1;
 			int coreOffset = core0 * cCores;
-			Parallel.For(0, cCores, optionsParallel, (core) =>
+			Parallel.For(0, cCores, GridIterator.optionsParallel, (core) =>
 			{
 				int idxCore = coreOffset + core;
 				Array.Clear(ac[idxCore], 1, N2 - 1);

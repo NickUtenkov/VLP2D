@@ -2,12 +2,15 @@ using DD128Numeric;
 using QD256Numeric;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.Media3D;
 using VLP2D.Common;
 using VLP2D.Model;
 using VLP2D.Properties;
@@ -23,14 +26,18 @@ namespace VLP2D.ViewModel
 		List<BitmapSource> listMap = new List<BitmapSource>();
 		List<BitmapSource> listMapDiff = new List<BitmapSource>();
 		bool bPrepareCalculationWasCalled;
+		float[,] interpolatedArray;
+		Adapter2D<float> adapterInterpolatedArray;
+		Picture3D picture3D;
 
 		public void setInput(IVLPRectangleInput inValue)
 		{
 			input = inValue;
 		}
 
-		BitmapSource createHeatMapDiff(MinMaxF minMax, Adapter2D<float> adapter)
+		BitmapSource createHeatMapDiff(MinMaxF minMax, Adapter2D<float> adapter, int width, int height)
 		{
+			scaleYDif = ((double)height / (double)width) * ((double)adapter.dim1 / (double)adapter.dim2);
 			BitmapSource rc = UtilsPict.createHeatMap(palNoPurple, minMax, adapter);
 			heatMapDiff = rc;
 			return rc;
@@ -38,22 +45,43 @@ namespace VLP2D.ViewModel
 
 		BitmapSource createInterpolatedHeatMap(bool palWithTransparent, MinMaxF minMax, Adapter2D<float> adapter, float stepX, float stepY, int width, int height)
 		{
-			BitmapSource rc = UtilsPict.createInterpolatedHeatMap(palWithTransparent ? Utils.palNoPurpleWithTransparent : Utils.palNoPurple, minMax, adapter, stepX, stepY, width, height);
+			BitmapSource rc;
+			BitmapPalette pal = palWithTransparent ? Utils.palNoPurpleWithTransparent : Utils.palNoPurple;
+
+			float fMin, fMax;
+			interpolatedArray = createInterpolatedArray(adapter, stepX, stepY, width, height, out fMin, out fMax);
+			adapterInterpolatedArray = new Adapter2D<float>(width, height, (i, j) => interpolatedArray[i, j]);
+			rc = createHeatMap(pal, new MinMaxF(fMin, fMax), adapterInterpolatedArray, 0);
+
 			heatMap = rc;
 			return rc;
 		}
 
+		void createSurface(Adapter2D<float> adapter, float xMin, float xMax, float yMin, float yMax)
+		{
+			UtilsThread.runOnUIThread(() =>
+			{
+				modelSurface = picture3D.plot(adapter, new MinMaxF(xMin, xMax), new MinMaxF(yMin, yMax));
+			});
+		}
+
 		Tuple<int, int> calculateWidthHeight(int cXSegments, double stepX, int cYSegments, double stepY)
 		{
-			if (cXSegments < UtilsPict.pictDim && cYSegments < UtilsPict.pictDim)
-			{
-				return new Tuple<int, int>(cXSegments + 1, cYSegments + 1);
-			}
-			int width = 0, height = UtilsPict.pictDim;
 			double lngX = cXSegments * stepX;
 			double lngY = cYSegments * stepY;
-			double ratio = lngX / lngY;
-			width = (int)(ratio * height);
+			int width = 0, height = 0;
+			if (lngX >= lngY)
+			{
+				width = UtilsPict.pictDim;
+				double ratio = lngX / lngY;
+				height = (int)(width / ratio);
+			}
+			else
+			{
+				height = UtilsPict.pictDim;
+				double ratio = lngY / lngX;
+				width = (int)(height / ratio);
+			}
 			return new Tuple<int, int>(width, height);
 		}
 
@@ -83,7 +111,7 @@ namespace VLP2D.ViewModel
 
 			miscParams.cudaDevice = input.cudaDevice();
 
-			pModel.recalculateSteps(inputValues, platformScheme, miscParams.isVarSepProgonka, miscParams.methodVarSep);
+			RectangleDataDouble rdd = pModel.recalculateSteps(inputValues, platformScheme, miscParams.isVarSepProgonka, miscParams.methodVarSep);
 
 			showDeviation = input.shouldUseCompareAnalytic();
 			idxHeatMap = 0;
@@ -94,15 +122,20 @@ namespace VLP2D.ViewModel
 			elapsedInfo = "";
 			listMap.Clear();
 			listMapDiff.Clear();
+			modelSurface = null;
+			picture3D.reset();
 			progressValue = 0;
 
-			var widthHeight = calculateWidthHeight(inputValues.cXSegments, inputValues.stepX, inputValues.cYSegments, inputValues.stepY);
-			BitmapSource funcIHM(bool palWithTransparent, MinMaxF minMax, Adapter2D<float> adapter) => createInterpolatedHeatMap(palWithTransparent, minMax, adapter, (float)inputValues.stepX, (float)inputValues.stepY, widthHeight.Item1, widthHeight.Item2);
+			var widthHeight = calculateWidthHeight(rdd.cXSegments, rdd.stepX, rdd.cYSegments, rdd.stepY);
+			BitmapSource funcIHM(bool palWithTransparent, MinMaxF minMax, Adapter2D<float> adapter) => createInterpolatedHeatMap(palWithTransparent, minMax, adapter, (float)rdd.stepX, (float)rdd.stepY, widthHeight.Item1, widthHeight.Item2);
+			BitmapSource funcDiff(MinMaxF minMax, Adapter2D<float> adapter) => createHeatMapDiff(minMax, adapter, widthHeight.Item1, widthHeight.Item2);
+
+			void funcCreateSurface() => createSurface(adapterInterpolatedArray, (float)rdd.xMin, (float)rdd.xMax, (float)rdd.yMin, (float)rdd.yMax);
 
 			setModelMethodsParams();
 			changeModelMultiThread(isMultiThread);
 			changeModelVisualParams(input.shouldVisualize() ,input.getVisualStep());
-			pModel.prepareCalculation(inputValues, idxInterpol, platformScheme, listMap, listMapDiff, funcIHM, createHeatMapDiff);
+			pModel.prepareCalculation(inputValues, idxInterpol, platformScheme, listMap, listMapDiff, funcIHM, funcDiff, funcCreateSurface);
 
 			if (listMap.Count > 0) heatMap = listMap[0];
 			heatMapDiff = (listMapDiff.Count > 0) ? listMapDiff[0] : null;
@@ -423,8 +456,158 @@ namespace VLP2D.ViewModel
 			}
 		}
 
+		public ICommand switchMode2D3DCommand
+		{
+			get { return new DelegateCommand(() => switchMode2D3D()); }
+		}
+
+		void switchMode2D3D()
+		{
+			bShow3D = !bShow3D;
+			strButton2D3D = bShow3D ? "3D -> 2D" : "2D -> 3D";
+		}
+
+		public ICommand mouseLeftButtonDown
+		{
+			get { return new ParameterCommand((arg) => doMouseLeftButtonDown((MouseButtonEventArgs)arg)); }
+		}
+
+		public ICommand mouseMove
+		{
+			get { return new ParameterCommand((arg) => doMouseMove((MouseEventArgs)arg)); }
+		}
+
+		public ICommand mouseLeftButtonUp
+		{
+			get { return new ParameterCommand((arg) => doMouseLeftButtonUp((MouseButtonEventArgs)arg)); }
+		}
+
+		public ICommand homeCommand
+		{
+			get { return new DelegateCommand(() => doHome()); }
+		}
+
+		public ICommand zoomInCommand
+		{
+			get { return new DelegateCommand(() => doZoomIn()); }
+		}
+
+		public ICommand zoomOutCommand
+		{
+			get { return new DelegateCommand(() => doZoomOut()); }
+		}
+
+		void doMouseLeftButtonDown(MouseButtonEventArgs arg)
+		{
+			if (bShow3D && arg.LeftButton == MouseButtonState.Pressed)
+			{
+				picture3D.mouseDown(arg.GetPosition(null));
+			}
+		}
+
+		void doMouseMove(MouseEventArgs arg)
+		{
+			if (bShow3D && arg.LeftButton == MouseButtonState.Pressed)
+			{
+				picture3D.mouseMove(arg.GetPosition(null), gridWidth, gridHeight);
+			}
+		}
+
+		void doMouseLeftButtonUp(MouseButtonEventArgs arg)
+		{
+			if (bShow3D) picture3D.mouseUp();
+		}
+
+		void doHome()
+		{
+			if (bShow3D) picture3D.home();
+		}
+
+		void doZoomIn()
+		{
+			if (bShow3D) picture3D.zoomIn();
+		}
+
+		void doZoomOut()
+		{
+			if (bShow3D) picture3D.zoomOut();
+		}
+
+		bool _bShow3D = false;
+		public bool bShow3D
+		{
+			get { return _bShow3D; }
+			set
+			{
+				if (_bShow3D == value) return;
+				_bShow3D = value;
+				RaisePropertyChangedEvent("bShow3D");
+			}
+		}
+
+		string _strButton2D3D = "2D -> 3D";
+		public string strButton2D3D
+		{
+			get { return _strButton2D3D; }
+			set
+			{
+				if (_strButton2D3D == value) return;
+				_strButton2D3D = value;
+				RaisePropertyChangedEvent("strButton2D3D");
+			}
+		}
+
+		Model3D _modelSurface = null;
+		public Model3D modelSurface
+		{
+			get { return _modelSurface; }
+			set
+			{
+				if (_modelSurface == value) return;
+				_modelSurface = value;
+				RaisePropertyChangedEvent(nameof(modelSurface));
+			}
+		}
+
+		private double _gridHeight;
+		public double gridHeight
+		{
+			get { return _gridHeight; }
+			set
+			{
+				if (value == _gridHeight) return;
+				_gridHeight = value;
+				RaisePropertyChangedEvent(nameof(gridHeight));
+			}
+		}
+
+		private double _gridWidth;
+		public double gridWidth
+		{
+			get { return _gridWidth; }
+			set
+			{
+				if (value == _gridWidth) return;
+				_gridWidth = value;
+				RaisePropertyChangedEvent(nameof(gridWidth));
+			}
+		}
+
+		private double _scaleYDif = 1.0;
+		public double scaleYDif
+		{
+			get { return _scaleYDif; }
+			set
+			{
+				if (value == _scaleYDif) return;
+				_scaleYDif = value;
+				RaisePropertyChangedEvent(nameof(scaleYDif));
+			}
+		}
+
 		public VLPRectangleOutputVM()
 		{
+			picture3D = new Picture3D();
 		}
 
 		public void changeModelPrecision(int indexPrecision)

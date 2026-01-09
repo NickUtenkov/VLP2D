@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Windows.Media.Media3D;
 
 namespace VLP2D.Common
 {
@@ -68,6 +65,36 @@ namespace VLP2D.Common
 		{
 			if (!string.IsNullOrEmpty(header)) Debug.WriteLine(header);
 			for (int i = 0; i <= ar.GetUpperBound(0); i++) if (ar[i] != null) printArray1D(ar[i], format, ar[i].GetUpperBound(0), null);
+		}
+
+		public static void printMatrix3D(Matrix3D matrix, string format, string header)
+		{
+			if (!string.IsNullOrEmpty(header)) Debug.WriteLine(header);
+			string s1;
+
+			s1 = string.Format(CultureInfo.InvariantCulture, format, matrix.M11);
+			s1 += string.Format(CultureInfo.InvariantCulture, " " + format, matrix.M12);
+			s1 += string.Format(CultureInfo.InvariantCulture, " " + format, matrix.M13);
+			s1 += string.Format(CultureInfo.InvariantCulture, " " + format, matrix.M14);
+			Debug.WriteLine(s1);
+
+			s1 = string.Format(CultureInfo.InvariantCulture, format, matrix.M21);
+			s1 += string.Format(CultureInfo.InvariantCulture, " " + format, matrix.M22);
+			s1 += string.Format(CultureInfo.InvariantCulture, " " + format, matrix.M23);
+			s1 += string.Format(CultureInfo.InvariantCulture, " " + format, matrix.M24);
+			Debug.WriteLine(s1);
+
+			s1 = string.Format(CultureInfo.InvariantCulture, format, matrix.M31);
+			s1 += string.Format(CultureInfo.InvariantCulture, " " + format, matrix.M32);
+			s1 += string.Format(CultureInfo.InvariantCulture, " " + format, matrix.M33);
+			s1 += string.Format(CultureInfo.InvariantCulture, " " + format, matrix.M34);
+			Debug.WriteLine(s1);
+
+			s1 = string.Format(CultureInfo.InvariantCulture, format, matrix.OffsetX);
+			s1 += string.Format(CultureInfo.InvariantCulture, " " + format, matrix.OffsetY);
+			s1 += string.Format(CultureInfo.InvariantCulture, " " + format, matrix.OffsetZ);
+			s1 += string.Format(CultureInfo.InvariantCulture, " " + format, matrix.M44);
+			Debug.WriteLine(s1);
 		}
 	}
 }

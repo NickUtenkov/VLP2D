@@ -11,7 +11,7 @@ using static VLP2D.Common.UtilsPict;
 
 namespace VLP2D.Model
 {
-	class CyclicReductionSchemeOCL<T> : CyclicReductionBaseSchemeOCL<T> where T : struct, INumber<T>, IMinMaxValue<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>
+	class CyclicReductionSchemeOCL<T> : CyclicReductionBaseSchemeOCL<T> where T : unmanaged, INumber<T>, IMinMaxValue<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>, IRootFunctions<T>
 	{
 		BufferOCL<T> alphaCoefs, alfa, vv, diagonalElements;
 		BufferOCL<T> ac, sum;
@@ -22,8 +22,8 @@ namespace VLP2D.Model
 		int alfaVectorLength;
 		int[] alfaOffsets, alfaCounts;
 
-		public CyclicReductionSchemeOCL(int cXSegments, int cYSegments, T stepXIn, T stepYIn, Func<T, T, T> fKsi, List<BitmapSource> lstBitmap0, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn, PlatformOCL platform, DeviceOCL device) :
-			base(cXSegments, cYSegments, stepXIn, stepYIn, fKsi, lstBitmap0, fCreateBitmap, reportProgressIn, platform, device)
+		public CyclicReductionSchemeOCL(RectangleData<T> rectData, Func<T, T, T> fKsi, List<BitmapSource> lstBitmap0, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn, PlatformOCL platform, DeviceOCL device) :
+			base(rectData, fKsi, lstBitmap0, fCreateBitmap, reportProgressIn, platform, device)
 		{
 			UtilsCL.checkDeviceSupportDouble<T>(device);
 			if ((N2 & 1) == 0) throw new System.Exception("CyclicReductionSchemeOCL N2 should be odd");

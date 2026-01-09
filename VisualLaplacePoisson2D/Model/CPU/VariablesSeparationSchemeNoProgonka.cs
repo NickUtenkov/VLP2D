@@ -3,26 +3,27 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
+using VLP2D.Common;
 using static VLP2D.Common.Utils;
 using static VLP2D.Common.UtilsElapsed;
 using static VLP2D.Common.UtilsPict;
 
 namespace VLP2D.Model
 {
-	class VariablesSeparationSchemeNoProgonka<T> : VariablesSeparationScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>
+	class VariablesSeparationSchemeNoProgonka<T> : VariablesSeparationScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		T[][] fik2i, fik1k2;
 		T[] lyambda1, lyambda2;
 		FFTCalculator<T> fftN1;
 
-		public VariablesSeparationSchemeNoProgonka(int cXSegments, int cYSegments, T stepX, T stepY, int cCores, Func<T, T, T> fKsi, List<BitmapSource> lstBitmap0, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn) :
-			base(cXSegments, cYSegments, stepX, stepY, cCores, fKsi, lstBitmap0, fCreateBitmap, reportProgressIn)
+		public VariablesSeparationSchemeNoProgonka(RectangleData<T> rectData, Func<T, T, T> fKsi, List<BitmapSource> lstBitmap0, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn) :
+			base(rectData, fKsi, lstBitmap0, fCreateBitmap, reportProgressIn)
 		{
 			fik2i = un;
 			fik1k2 = un;
 
 			fftN1 = fftN2;
-			if (N1 != N2) fftN1 = new FFTCalculator<T>(cCores, N1);
+			if (N1 != N2) fftN1 = new FFTCalculator<T>(GridIterator.optionsParallel.MaxDegreeOfParallelism, N1);
 
 			progressSteps = 100;//4 loops by 25
 			rem1 = N1 / 15;//twice 15(in calculate) plus 70(rem2)
@@ -46,6 +47,7 @@ namespace VLP2D.Model
 
 			elapsed = getExecutedSeconds(stopWatchEL, () => fftN2Calculate(T.CreateTruncating(4.0 / (N1 * N2)), addPictureAction));//[SNR] p.192, (27), using uk2i[i, k] & fn[i, k]
 			listElapsedAdd("FFTN2_2", elapsed);
+			//UtilsPrint.printJaggedArray(un, "{0,7:0.000}", "FFT");
 
 			return T.Zero;//epsilon, == 0 because no more iterations(only one iteration - direct(not iteration) method)
 		}
@@ -71,7 +73,8 @@ namespace VLP2D.Model
 		void fftN1Calculate()
 		{
 			int rem2 = N2 / 70;
-			Parallel.For(0, cCores, optionsParallel, (core, loopState) =>
+			int cCores = GridIterator.optionsParallel.MaxDegreeOfParallelism;
+			Parallel.For(0, cCores, GridIterator.optionsParallel, (core, loopState) =>
 			{
 				if (loopState.IsStopped) return;
 				for (int k2 = 1 + core; k2 < N2; k2 += cCores)

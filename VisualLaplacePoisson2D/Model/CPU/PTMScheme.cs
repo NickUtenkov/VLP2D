@@ -4,23 +4,20 @@ using VLP2D.Common;
 
 namespace VLP2D.Model
 {
-	class PTMScheme<T> : PTMSchemeBase<T> where T : INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>
+	class PTMScheme<T> : PTMSchemeBase<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		T[,] rk, wk;//==0 on boundary
 		readonly Action<int,int> funcFk;
-		T stepX, stepY;
 		int upper1, upper2;
 		T _2 = T.CreateTruncating(2);
 
-		public PTMScheme(int cXSegments, int cYSegments, T stepX, T stepY, bool isChebyshIn, T epsIn, Func<T, T, T> fKsi) :
-			base(cXSegments, cYSegments, stepX, stepY, isChebyshIn, epsIn, fKsi)
+		public PTMScheme(RectangleData<T> rectData, bool isChebyshIn, T epsIn, Func<T, T, T> fKsi) :
+			base(rectData.cXSegments, rectData.cYSegments, rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY, isChebyshIn, epsIn, fKsi)
 		{
-			rk = new T[cXSegments + 1, cYSegments + 1];
-			wk = new T[cXSegments + 1, cYSegments + 1];
+			rk = new T[rectData.cXSegments + 1, rectData.cYSegments + 1];
+			wk = new T[rectData.cXSegments + 1, rectData.cYSegments + 1];
 			if (fKsi == null) funcFk = funcFkLap;
 			else funcFk = funcFkPoi;
-			this.stepX = stepX;
-			this.stepY = stepY;
 			upper1 = rk.GetUpperBound(0);
 			upper2 = rk.GetUpperBound(1);
 		}

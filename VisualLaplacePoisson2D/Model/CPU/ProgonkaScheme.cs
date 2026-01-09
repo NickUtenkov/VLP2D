@@ -13,7 +13,6 @@ namespace VLP2D.Model
 		T[,] unm;
 		protected T[] alphaX, alphaY;//beta is placed to un1
 		protected int kX, kY;
-		ParallelOptions optionsParallel;
 		protected int cXSegments, cYSegments;
 		protected Func<T[,], int, int, int, T> rhsX, rhsY;//Right Hand Sides
 		protected Func<int, int, T> funcX, funcY;
@@ -23,7 +22,8 @@ namespace VLP2D.Model
 		protected AlfaСonvergentUpperBoundEpsilon αCC = new AlfaСonvergentUpperBoundEpsilon(UtilsEps.epsilon<T>());
 		protected T _2 = T.CreateTruncating(2);
 
-		public ProgonkaScheme(int cXSegments1, int cYSegments1, T stepX, T stepY, T epsIn, Func<T, T, T> fKsi, ParallelOptions optionsParallelIn)
+		public ProgonkaScheme(int cXSegments1, int cYSegments1, T xMin, T yMin, T stepX, T stepY, T epsIn, Func<T, T, T> fKsi) :
+			base(xMin, yMin, stepX, stepY)
 		{
 			stepX2 = stepX * stepX;
 			stepY2 = stepY * stepY;
@@ -34,8 +34,6 @@ namespace VLP2D.Model
 			un1 = new T[cXSegments + 1, cYSegments + 1];
 			unm = new T[cXSegments + 1, cYSegments + 1];
 
-			optionsParallel = optionsParallelIn;
-
 			alphaX = new T[cXSegments];
 			alphaY = new T[cYSegments];
 
@@ -43,7 +41,7 @@ namespace VLP2D.Model
 			if (fKsi != null)
 			{
 				fn = new T[cXSegments + 1, cYSegments + 1];//exterior points are not used
-				GridIterator.iterate(cXSegments, cYSegments, (i, j) => fn[i, j] = fKsi(stepX * T.CreateTruncating(i), stepY * T.CreateTruncating(j)));
+				GridIterator.iterate(cXSegments, cYSegments, (i, j) => fn[i, j] = fKsi(xMin + stepX * T.CreateTruncating(i), yMin + stepY * T.CreateTruncating(j)));
 			}
 
 			calculateOptimalTimeStep(stepX, stepY);
@@ -74,8 +72,8 @@ namespace VLP2D.Model
 		{
 			calculateIterationAlpha?.Invoke(iter);
 
-			Parallel.For(1, cYSegments, optionsParallel, j => progonkaX(srcX, dstX, j, iter));
-			Parallel.For(1, cXSegments, optionsParallel, i => progonkaY(srcY, dstY, i, iter));
+			Parallel.For(1, cYSegments, GridIterator.optionsParallel, j => progonkaX(srcX, dstX, j, iter));
+			Parallel.For(1, cXSegments, GridIterator.optionsParallel, i => progonkaY(srcY, dstY, i, iter));
 
 			T rc;
 			if (bProgonkaFixedIters) rc = T.One;

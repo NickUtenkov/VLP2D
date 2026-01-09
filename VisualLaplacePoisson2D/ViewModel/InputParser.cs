@@ -13,7 +13,7 @@ namespace VLP2D.ViewModel
 	public class InputParser
 	{
 		HashSet<string> setKeys = new HashSet<string>();
-		string[] keysRequired = { "xMax", "yMax", "segmentsX", "segmentsY", 
+		string[] keysRequired = { "xMin", "yMin", "xMax", "yMax", "segmentsX", "segmentsY", 
 		};
 		string keyEpsilon = "epsilon";
 		string[] keysIterations = 
@@ -51,16 +51,15 @@ namespace VLP2D.ViewModel
 		{
 			VLPRectangleParams parsedParams = null;
 			List<string> strErrors = new List<string>();
-			Dictionary<string, string> dict = new Dictionary<string, string>();
+			Dictionary<string, string> dict = defaultDictionary();
 			readParameters(filePath, dict, setKeys);
-			bool reqPresent = parametersValuesPresent(dict, keysRequired, strErrors);
 #if !AllowAbscentIterations
-			bool reqPresent2 = parametersValuesPresent(dict, keysTypeDependent, keysTypeNames, strErrors);
+			bool reqPresent = parametersValuesPresent(dict, keysTypeDependent, keysTypeNames, strErrors);
 #else
-			bool reqPresent2 = true;
+			bool reqPresent = true;
 #endif
 			bool altPresent = boundariesParametersValuesPresent(dict, keysBoundaries1, keysBoundaries2, strErrors);
-			if (reqPresent && reqPresent2 && altPresent)
+			if (reqPresent && altPresent)
 			{
 				int segmentsX = parseInt(dict, "segmentsX", strErrors);
 				int segmentsY = parseInt(dict, "segmentsY", strErrors);
@@ -102,7 +101,7 @@ namespace VLP2D.ViewModel
 					if (itersCUDA.GetValueOrDefault(keysOptionalCUDA[i]) == null) itersCUDA[keysOptionalCUDA[i]] = itersCPU.GetValueOrDefault(keysCPU[i]);
 				}
 
-				string replaceMaxes(string key) => dict.GetValueOrDefault(key)?.Replace("xMax", dict["xMax"]).Replace("yMax", dict["yMax"]);
+				string replaceMaxes(string key) => dict.GetValueOrDefault(key)?.Replace("xMin", dict["xMin"]).Replace("yMin", dict["yMin"]).Replace("xMax", dict["xMax"]).Replace("yMax", dict["yMax"]);
 				string fLeft = replaceMaxes("funcLeft");
 				string fRight = replaceMaxes("funcRight");
 				string fTop = replaceMaxes("funcTop");
@@ -114,7 +113,7 @@ namespace VLP2D.ViewModel
 				if (strErrors.Count == 0)
 				{
 					string name = Path.GetFileNameWithoutExtension(filePath);
-					parsedParams = new VLPRectangleParams(dict["xMax"], dict["yMax"], segmentsX, segmentsY, itersCPU, itersOCL, itersCUDA, dictEpsilon, RHS, fLeft, fRight, fTop, fBottom, funcBoundary, funcAnalytic, name);
+					parsedParams = new VLPRectangleParams(dict["xMin"], dict["yMin"], dict["xMax"], dict["yMax"], segmentsX, segmentsY, itersCPU, itersOCL, itersCUDA, dictEpsilon, RHS, fLeft, fRight, fTop, fBottom, funcBoundary, funcAnalytic, name);
 				}
 			}
 			if (strErrors.Count > 0)
@@ -151,18 +150,18 @@ namespace VLP2D.ViewModel
 			}
 		}
 
-		bool parametersValuesPresent(Dictionary<string, string> dictParams, string[] names, List<string> strErrors)
+		Dictionary<string, string> defaultDictionary()
 		{
-			int count = 0;
-			foreach (string name in names)
-			{
-				if (string.IsNullOrEmpty(dictParams.GetValueOrDefault(name)))
-				{
-					count++;
-					strErrors.Add(string.Format(Resources.strReqParameterMissed, name));
-				}
-			}
-			return count == 0;
+			Dictionary<string, string> dict = new Dictionary<string, string>();
+
+			dict["xMin"] = "0";
+			dict["yMin"] = "0";
+			dict["xMax"] = "1";
+			dict["yMax"] = "1";
+			dict["segmentsX"] = "100";
+			dict["segmentsY"] = "100";
+
+			return dict;
 		}
 
 		bool parametersValuesPresent(Dictionary<string, string> dictParams, string[] names, string[] types, List<string> strErrors)

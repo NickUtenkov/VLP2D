@@ -6,7 +6,7 @@ namespace VLP2D.Common
 {
 	public static class GridIterator
 	{
-		public static ParallelOptions optionsParallel;
+		public static ParallelOptions optionsParallel = new ParallelOptions();
 
 		public static void iterate(int upperX, int upperY, Action<int, int> func)
 		{

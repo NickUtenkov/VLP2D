@@ -13,13 +13,13 @@ using static VLP2D.Common.UtilsPict;
 
 namespace VLP2D.Model
 {
-	class FACRScheme<T> : FACRSchemeBase<T>, IScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>
+	class FACRScheme<T> : FACRSchemeBase<T>, IScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		protected T y2DivX2;
 		AlfaСonvergentUpperBoundEpsilon αCC = new AlfaСonvergentUpperBoundEpsilon(UtilsEps.epsilon<T>());
 
-		public FACRScheme(int cXSegments, int cYSegments, T stepXIn, T stepYIn, int cCores, Func<T, T, T> fKsi, int paramL, List<BitmapSource> lstBitmap0, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn)
-			: base(cXSegments, cYSegments, stepXIn, stepYIn, cCores, fKsi, paramL, lstBitmap0, fCreateBitmap, reportProgressIn)
+		public FACRScheme(RectangleData<T> rectData, Func<T, T, T> fKsi, int paramL, List<BitmapSource> lstBitmap0, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn)
+			: base(rectData, fKsi, paramL, lstBitmap0, fCreateBitmap, reportProgressIn)
 		{
 			y2DivX2 = stepY2 / stepX2;
 

@@ -10,13 +10,13 @@ using VLP2D.Common;
 
 namespace VLP2D.Model
 {
-	public class MultiGridSchemeOCL<T> : Iterative1DScheme<T>, IScheme<T> where T : struct, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>
+	class MultiGridSchemeOCL<T> : Iterative1DScheme<T>, IScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		readonly BufferOCL<T>[] un;
 		readonly BufferOCL<T>[] rhs;//right hand side
 		readonly BufferOCL<T>[] res;//residual
 		BufferOCL<T> fn;
-		readonly T[] stepX, stepY;
+		readonly T[] arStepsX, arStepsY;
 		readonly SlidingIterationMultiGridSchemeOCL<T> smoother;
 		readonly T eps;
 		readonly int nLevels;
@@ -33,13 +33,14 @@ namespace VLP2D.Model
 		KernelOCL kernelResidual, kernelRestrictResidual, kernelFillArrayWithEdges, kernelInterpolate, kernelEpsExceeded;
 		CommandQueueOCL commands;
 
-		public MultiGridSchemeOCL(int cXSegments, int cYSegments, T stepXIn, T stepYIn, Func<T, T, T> fKsi, T eps, PlatformOCL platform, DeviceOCL device)
+		public MultiGridSchemeOCL(RectangleData<T> rectData, Func<T, T, T> fKsi, T eps, PlatformOCL platform, DeviceOCL device) :
+			base(rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY)
 		{
 			UtilsCL.checkDeviceSupportDouble<T>(device);
 			commands = UtilsCL.createCommandQueue(platform, device, CommandQueueFlagsOCL.None);
 
-			dimX = cXSegments + 1;
-			dimY = cYSegments + 1;
+			dimX = rectData.cXSegments + 1;
+			dimY = rectData.cYSegments + 1;
 			this.eps = eps;
 
 			try
@@ -48,12 +49,12 @@ namespace VLP2D.Model
 
 				if (fKsi != null)
 				{
-					GridIterator.iterate(dimX - 1, dimY - 1, (i, j) => un0[i * dimY + j] = -fKsi(stepXIn * T.CreateTruncating(i), stepYIn * T.CreateTruncating(j)));
+					GridIterator.iterate(dimX - 1, dimY - 1, (i, j) => un0[i * dimY + j] = -fKsi(xMin + stepX * T.CreateTruncating(i), xMin + stepY * T.CreateTruncating(j)));
 					fn = new BufferOCL<T>(commands.Context, MemoryFlagsOCL.ReadOnly | MemoryFlagsOCL.CopyHostPointer, un0);
 				}
 
-				int nLevelsX = (int)Math.Log(cXSegments, 2);
-				int nLevelsY = (int)Math.Log(cYSegments, 2);
+				int nLevelsX = (int)Math.Log(rectData.cXSegments, 2);
+				int nLevelsY = (int)Math.Log(rectData.cYSegments, 2);
 				nLevels = Math.Min(nLevelsX, nLevelsY);
 
 				dim0 = new int[nLevels];
@@ -61,18 +62,18 @@ namespace VLP2D.Model
 				un = new BufferOCL<T>[nLevels];
 				rhs = new BufferOCL<T>[nLevels];
 				res = new BufferOCL<T>[nLevels];
-				stepX = new T[nLevels];
-				stepY = new T[nLevels];
+				arStepsX = new T[nLevels];
+				arStepsY = new T[nLevels];
 				smoother = new SlidingIterationMultiGridSchemeOCL<T>(commands);
 				workSize2DInternalPoints = new long[nLevels][];
 				workSize2DAllPoints = new long[nLevels][];
 				workSize1DInternalPointsX = new long[nLevels][];
 				workSize1DInternalPointsY = new long[nLevels][];
 
-				int cSegsX = cXSegments;//is 2^n
-				int cSegsY = cYSegments;//is 2^n
-				T lngX = stepXIn * T.CreateTruncating(cSegsX);
-				T lngY = stepYIn * T.CreateTruncating(cSegsY);
+				int cSegsX = rectData.cXSegments;//is 2^n
+				int cSegsY = rectData.cYSegments;//is 2^n
+				T lngX = stepX * T.CreateTruncating(cSegsX);
+				T lngY = stepY * T.CreateTruncating(cSegsY);
 				for (int i = 0; i < nLevels; i++)
 				{
 					dim0[i] = cSegsX + 1;
@@ -80,9 +81,9 @@ namespace VLP2D.Model
 					un[i] = new BufferOCL<T>(commands.Context, MemoryFlagsOCL.ReadWrite, dim0[i] * dim1[i]);
 					rhs[i] = (i == 0) && (fn != null) ? fn : new BufferOCL<T>(commands.Context, MemoryFlagsOCL.ReadWrite, dim0[i] * dim1[i]);
 					res[i] = (i < nLevels - 1) ? new BufferOCL<T>(commands.Context, MemoryFlagsOCL.ReadWrite, dim0[i] * dim1[i]) : null;
-					stepX[i] = lngX / T.CreateTruncating(cSegsX);
-					stepY[i] = lngY / T.CreateTruncating(cSegsY);
-					smoother.addKernelParameters(dim0[i], dim1[i], un[i], (i == 0) ? fn : rhs[i], stepX[i], stepY[i]);
+					arStepsX[i] = lngX / T.CreateTruncating(cSegsX);
+					arStepsY[i] = lngY / T.CreateTruncating(cSegsY);
+					smoother.addKernelParameters(dim0[i], dim1[i], un[i], (i == 0) ? fn : rhs[i], arStepsX[i], arStepsY[i]);
 					cSegsX /= 2;
 					cSegsY /= 2;
 					workSize2DInternalPoints[i] = new long[] { dim0[i] - 2, dim1[i] - 2 };
@@ -186,8 +187,8 @@ namespace VLP2D.Model
 			kernelResidual.SetMemoryArgument(0, res[level]);
 			kernelResidual.SetMemoryArgument(1, rhs[level]);
 			kernelResidual.SetMemoryArgument(2, un[level]);
-			kernelResidual.SetValueArgument(3, (stepX[level] * stepX[level]));
-			kernelResidual.SetValueArgument(4, (stepY[level] * stepY[level]));
+			kernelResidual.SetValueArgument(3, (arStepsX[level] * arStepsX[level]));
+			kernelResidual.SetValueArgument(4, (arStepsY[level] * arStepsY[level]));
 			kernelResidual.SetValueArgument(5, dim1[level]);
 
 			commands.Execute(kernelResidual, null, workSize2DInternalPoints[level], null, null);

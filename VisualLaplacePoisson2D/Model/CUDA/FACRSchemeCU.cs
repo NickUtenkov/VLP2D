@@ -12,14 +12,13 @@ using static VLP2D.Common.UtilsPict;
 
 namespace VLP2D.Model
 {
-	internal class FACRSchemeCU<T> : Direct1DNoBoundariesScheme<T>, IScheme<T> where T : struct, INumber<T>, ITrigonometricFunctions<T>, IMinMaxValue<T>, IRootFunctions<T>, ILogarithmicFunctions<T>
+	class FACRSchemeCU<T> : Direct1DNoBoundariesScheme<T>, IScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, IMinMaxValue<T>, IRootFunctions<T>, ILogarithmicFunctions<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		CudaContext ctx;
 		CudaDeviceVariable<T> unCU, fftData;
 
 		readonly int N1, N2, ML, L;
 		Func<T, T, T> fKsi;
-		T stepX, stepY;
 		protected Action<double> reportProgress;
 		float curProgress;
 		bool iterationsCanceled;
@@ -33,18 +32,16 @@ namespace VLP2D.Model
 		List<BitmapSource> lstBitmap;
 		Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap;
 
-		public FACRSchemeCU(int cXSegments, int cYSegments, T stepX, T stepY, Func<T, T, T> fKsi, int paramL, List<BitmapSource> lstBitmap, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, ParallelOptions optionsParallel, Action<double> reportProgressIn, int cudaDevice)
-			: base(cXSegments - 1, cYSegments - 1, stepX, stepY, optionsParallel)
+		public FACRSchemeCU(RectangleData<T> rectData, Func<T, T, T> fKsi, int paramL, List<BitmapSource> lstBitmap, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn, int cudaDevice)
+			: base(rectData.cXSegments - 1, rectData.cYSegments - 1, rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY)
 		{
 			ctx = new CudaContext(cudaDevice);
 			this.fKsi = fKsi;
-			this.stepX = stepX;
-			this.stepY = stepY;
 			this.lstBitmap = lstBitmap;
 			this.fCreateBitmap = fCreateBitmap;
 
-			N1 = cXSegments;
-			N2 = cYSegments;//is 2^x
+			N1 = rectData.cXSegments;
+			N2 = rectData.cYSegments;//is 2^x
 			L = paramL;
 			ML = N2 >> L;
 
@@ -146,7 +143,7 @@ namespace VLP2D.Model
 
 		void initRigthHandSide(Func<T, T, T> fKsi, T stepX, T stepY)
 		{
-			if (fKsi != null) iterate((i, j) => un[i * dim2 + j] += fKsi(stepX * T.CreateTruncating(i + 1), stepY * T.CreateTruncating(j + 1)));
+			if (fKsi != null) iterate((i, j) => un[i * dim2 + j] += fKsi(xMin + stepX * T.CreateTruncating(i + 1), yMin + stepY * T.CreateTruncating(j + 1)));
 		}
 
 		override public string getElapsedInfo() { return timesElapsed(); }

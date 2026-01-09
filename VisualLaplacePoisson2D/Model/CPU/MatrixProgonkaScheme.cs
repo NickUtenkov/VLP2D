@@ -10,10 +10,10 @@ using static VLP2D.Common.UtilsPict;
 
 namespace VLP2D.Model
 {
-	class MatrixProgonkaScheme<T> : DirectJagged2Scheme<T>, IScheme<T> where T : struct, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>
+	class MatrixProgonkaScheme<T> : DirectJagged2Scheme<T>, IScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{//modified block elimination method
 		T[][] alfa,vk, vkSum;
-		T stepX, stepY, cBase, subsupra;//subsupra - subdiagonal,supradiagonal
+		T cBase, subsupra;//subsupra - subdiagonal,supradiagonal
 		Func<T, T, T> fKsi;
 		readonly int alfaUpperBound, progonkaUpperBound;
 		bool iterationsCanceled;
@@ -22,22 +22,21 @@ namespace VLP2D.Model
 		float[][] unShow;
 		Action<double> reportProgress;
 		int progressSteps, curProgress;
-		readonly ParallelOptions optionsParallel;
 		int cCores;
 		AlfaСonvergentUpperBoundEpsilon αCC = new AlfaСonvergentUpperBoundEpsilon(UtilsEps.epsilon<T>());
 		T _2 = T.CreateTruncating(2);
 
-		public MatrixProgonkaScheme(int cXSegments, int cYSegments, T stepXIn, T stepYIn, int cCores, Func<T, T, T> fKsi, List<BitmapSource> lstBitmap, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn) :
-			base(cXSegments + 1, cYSegments + 1, fKsi == null)
+		public MatrixProgonkaScheme(RectangleData<T> rectData, Func<T, T, T> fKsi, List<BitmapSource> lstBitmap, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn) :
+			base(rectData.cXSegments + 1, rectData.cYSegments + 1, rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY, fKsi == null)
 		{
-			optionsParallel = new ParallelOptions() { MaxDegreeOfParallelism = cCores };
+			cCores = GridIterator.optionsParallel.MaxDegreeOfParallelism;
 
 			vk = new T[cCores][];
 			vkSum = new T[cCores][];
 			for (int i = 0; i < cCores; i++)
 			{
-				vk[i] = new T[cYSegments - 1];
-				vkSum[i] = new T[cYSegments - 1];
+				vk[i] = new T[rectData.cYSegments - 1];
+				vkSum[i] = new T[rectData.cYSegments - 1];
 			}
 			alfa = new T[cCores][];
 			for (int i = 0; i < cCores; i++) alfa[i] = new T[N2 - 1];
@@ -45,8 +44,6 @@ namespace VLP2D.Model
 			alfaUpperBound = alfa[0].GetUpperBound(0);
 			progonkaUpperBound = vk[0].GetUpperBound(0);
 
-			stepX = stepXIn;
-			stepY = stepYIn;
 			subsupra = stepX * stepX / (stepY * stepY);//[SNR] p.106, (4), steps are reversed
 
 			this.fKsi = fKsi;
@@ -55,8 +52,8 @@ namespace VLP2D.Model
 			this.fCreateBitmap = fCreateBitmap;
 			if (lstBitmap != null)
 			{
-				unShow = new float[cXSegments + 1][];
-				for (int i = 0; i < cXSegments + 1; i++) unShow[i] = new float[cYSegments + 1];
+				unShow = new float[rectData.cXSegments + 1][];
+				for (int i = 0; i < rectData.cXSegments + 1; i++) unShow[i] = new float[rectData.cYSegments + 1];
 			}
 
 			reportProgress = reportProgressIn;
@@ -64,8 +61,6 @@ namespace VLP2D.Model
 			curProgress = 0;
 
 			cBase = (T.One + subsupra) * _2;//[SNR] p.106, (4)
-
-			this.cCores = cCores;
 		}
 
 		public T doIteration(int iter)
@@ -77,7 +72,7 @@ namespace VLP2D.Model
 
 			for (int i = 1; i < N1; i++)
 			{
-				Parallel.For(0, optionsParallel.MaxDegreeOfParallelism, optionsParallel, k => { for (int j = 0; j < N2 - 1; j++) vkSum[k][j] = T.Zero; });
+				Parallel.For(0, cCores, GridIterator.optionsParallel, k => { for (int j = 0; j < N2 - 1; j++) vkSum[k][j] = T.Zero; });
 				for (int j = 1; j < N2; j++) un[i][j] += un[i - 1][j];//Fj + beta(j)(beta is zero-based),[SNR] p.117 (40)
 				matrixAjMultiplyVectorUsingProgonka(i, 0);//[SNR] p.117 (40)
 
@@ -87,7 +82,7 @@ namespace VLP2D.Model
 
 			for (int i = N1 - 1; i > 0; i--)
 			{
-				Parallel.For(0, optionsParallel.MaxDegreeOfParallelism, optionsParallel, k => { for (int j = 0; j < N2 - 1; j++) vkSum[k][j] = (k == 0) ? un[i][j + 1] : T.Zero; });
+				Parallel.For(0, cCores, GridIterator.optionsParallel, k => { for (int j = 0; j < N2 - 1; j++) vkSum[k][j] = (k == 0) ? un[i][j + 1] : T.Zero; });
 				matrixAjMultiplyVectorUsingProgonka(i, 1);//[SNR] p.117 (41)
 				if (unShow != null) for (int j = 1; j < N2; j++) unShow[i][j] = float.CreateTruncating(un[i][j]);
 
@@ -106,7 +101,7 @@ namespace VLP2D.Model
 			int rightHandSideRow = resultRow + deltaRow;
 			T _jOrI = T.CreateTruncating(jOrI);
 
-			Parallel.For(0, cCores, optionsParallel, (j, loopState) =>
+			Parallel.For(0, cCores, GridIterator.optionsParallel, (j, loopState) =>
 			{
 				if (loopState.IsStopped) return;
 				for (int k = j + 1; k < jOrI; k += cCores)
@@ -127,7 +122,7 @@ namespace VLP2D.Model
 			});
 			if (iterationsCanceled) return;
 
-			for (int k = 1; k < optionsParallel.MaxDegreeOfParallelism; k++) for (int j = 0; j <= progonkaUpperBound; j++) vkSum[0][j] += vkSum[k][j];
+			for (int k = 1; k < cCores; k++) for (int j = 0; j <= progonkaUpperBound; j++) vkSum[0][j] += vkSum[k][j];
 			for (int j = 0; j <= progonkaUpperBound; j++) un[resultRow][j + 1] = vkSum[0][j];
 		}
 
@@ -136,7 +131,7 @@ namespace VLP2D.Model
 			T stepX2 = stepX * stepX;//steps are reversed
 			int upper1 = fj.GetUpperBound(0);
 			int upper2 = fj[0].GetUpperBound(0);
-			if (fKsi != null) GridIterator.iterate(upper1, upper2, (i, j) => { fj[i][j] = stepX2 * fKsi(stepX * T.CreateTruncating(i), stepY * T.CreateTruncating(j)); });//[SNR] p.105(middle), analog [SNR] p.123 (8)
+			if (fKsi != null) GridIterator.iterate(upper1, upper2, (i, j) => { fj[i][j] = stepX2 * fKsi(xMin + stepX * T.CreateTruncating(i), yMin + stepY * T.CreateTruncating(j)); });//[SNR] p.105(middle), analog [SNR] p.123 (8)
 			else GridIterator.iterate(upper1, upper2, (i, j) => { fj[i][j] = T.Zero; });//reset to zero initial iteration
 
 			Parallel.For(1, fj.GetUpperBound(0), (i) =>

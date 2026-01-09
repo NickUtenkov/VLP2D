@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -56,36 +57,31 @@ namespace VLP2D.Common
 			return rc;
 		}
 
-		public static BitmapSource createInterpolatedHeatMap(BitmapPalette pal, MinMaxF minMax, Adapter2D<float> adapter, float stepX, float stepY, int width, int height)
-		{//https://ru.wikipedia.org/wiki/%D0%91%D0%B8%D0%BB%D0%B8%D0%BD%D0%B5%D0%B9%D0%BD%D0%B0%D1%8F_%D0%B8%D0%BD%D1%82%D0%B5%D1%80%D0%BF%D0%BE%D0%BB%D1%8F%D1%86%D0%B8%D1%8F
-		 //https://en.wikipedia.org/wiki/Bilinear_interpolation
-			if (width < pictDim && height < pictDim)
-			{
-				return createHeatMap(pal, minMax, adapter, 0);
-			}
-			float fMin = float.MaxValue, fMax = float.MinValue;
+		public static float[,] createInterpolatedArray(Adapter2D<float> adapter, float stepX, float stepY, int width, int height, out float fMin, out float fMax)
+		{
+			//https://ru.wikipedia.org/wiki/%D0%91%D0%B8%D0%BB%D0%B8%D0%BD%D0%B5%D0%B9%D0%BD%D0%B0%D1%8F_%D0%B8%D0%BD%D1%82%D0%B5%D1%80%D0%BF%D0%BE%D0%BB%D1%8F%D1%86%D0%B8%D1%8F
+			//https://en.wikipedia.org/wiki/Bilinear_interpolation
+			float fMinLoc = float.MaxValue;
+			float fMaxLoc = float.MinValue;
 			Action<float> updateMinMax = (val1) =>
 			{
 				if (!float.IsNaN(val1))
 				{
-					if (fMax < val1) fMax = val1;
-					if (fMin > val1) fMin = val1;
+					if (fMaxLoc < val1) fMaxLoc = val1;
+					if (fMinLoc > val1) fMinLoc = val1;
 				}
 			};
 
-			float lngXFine = (adapter.dim1 - 1) * stepX;
-			float lngYFine = (adapter.dim2 - 1) * stepY;
+			float lengthX = (adapter.dim1 - 1) * stepX;
+			float lengthY = (adapter.dim2 - 1) * stepY;
 			float[,] inter = new float[width, height];
 
 			float hXFine = stepX;
 			float hYFine = stepY;
 			float e = 1 / (hXFine * hYFine);
 
-			float lngXCoarse = lngXFine;
-			float lngYCoarse = lngYFine;
-
-			float hXCoarse = lngXCoarse / width;
-			float hYCoarse = lngYCoarse / height;
+			float hXCoarse = lengthX / width;
+			float hYCoarse = lengthY / height;
 
 			int[] xIndexesLeft = { 1, };
 			int[] xIndexesRight = { width - 2, };
@@ -130,8 +126,10 @@ namespace VLP2D.Common
 				}
 			}
 			);
+			fMin = fMinLoc;
+			fMax = fMaxLoc;
 
-			return createHeatMap(pal, new MinMaxF(fMin, fMax), new Adapter2D<float>(width, height, (i, j) => inter[i, j]), 0);
+			return inter;
 		}
 
 		public static void addPicture(List<BitmapSource> lstBitmap, bool palWithTransparent, MinMaxF minMax, Adapter2D<float> adapter, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap)

@@ -10,42 +10,36 @@ using static VLP2D.Common.UtilsPict;
 
 namespace VLP2D.Model
 {
-	class VariablesSeparationScheme<T> : DirectJagged2Scheme<T>, IScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>
+	class VariablesSeparationScheme<T> : DirectJagged2Scheme<T>, IScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		protected T[][] fn;
 		protected float[][] unShow;
-		protected readonly ParallelOptions optionsParallel;
 		protected List<BitmapSource> lstBitmap;
 		protected readonly Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap;
 		protected Action<double> reportProgress;
 		protected int progressSteps, curProgress;
-		protected T stepX, stepY, stepX2, stepY2;
+		protected T stepX2, stepY2;
 		protected Func<T, T, T> fKsi;
 		protected FFTCalculator<T> fftN2;
 		bool iterationsCanceled;
-		protected int cCores;
 		protected int rem1, remPict;
 		protected Action<int> addPictureAction = null;
 
-		public VariablesSeparationScheme(int cXSegments, int cYSegments, T stepXIn, T stepYIn, int cCores, Func<T, T, T> fKsi, List<BitmapSource> lstBitmap, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn) :
-			base(cXSegments + 1, cYSegments + 1, fKsi == null)
+		public VariablesSeparationScheme(RectangleData<T> rectData, Func<T, T, T> fKsi, List<BitmapSource> lstBitmap, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn) :
+			base(rectData.cXSegments + 1, rectData.cYSegments + 1, rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY, fKsi == null)
 		{//N2 is 2^x, N1 can not be pow of 2(because fft for cXSegments is not used)
 			fn = un;
-			stepX = stepXIn;
-			stepY = stepYIn;
-			stepX2 = stepXIn * stepXIn;
-			stepY2 = stepYIn * stepYIn;
+			stepX2 = stepX * stepX;
+			stepY2 = stepY * stepY;
 			this.fKsi = fKsi;
 			reportProgress = reportProgressIn;
-			this.cCores = cCores;
-			optionsParallel = new ParallelOptions() { MaxDegreeOfParallelism = cCores};
 
 			this.lstBitmap = lstBitmap;
 			this.fCreateBitmap = fCreateBitmap;
 			if (lstBitmap != null)
 			{
-				unShow = new float[cXSegments + 1][];
-				for (int i = 0; i < cXSegments + 1; i++) unShow[i] = new float[cYSegments + 1];
+				unShow = new float[rectData.cXSegments + 1][];
+				for (int i = 0; i < rectData.cXSegments + 1; i++) unShow[i] = new float[rectData.cYSegments + 1];
 			}
 			if (unShow != null) addPictureAction = (i) =>
 			{
@@ -56,7 +50,7 @@ namespace VLP2D.Model
 			progressSteps = 0;
 			curProgress = 0;
 
-			fftN2 = new FFTCalculator<T>(cCores,N2);
+			fftN2 = new FFTCalculator<T>(GridIterator.optionsParallel.MaxDegreeOfParallelism, N2);
 		}
 
 		protected void initRigthHandSide(Func<T, T, T> fKsi, T stepX, T stepY)
@@ -65,7 +59,7 @@ namespace VLP2D.Model
 			{
 				int upper1 = fn.GetUpperBound(0);
 				int upper2 = fn[0].GetUpperBound(0);
-				GridIterator.iterate(upper1, upper2, (i, j) => fn[i][j] += fKsi(stepX * T.CreateTruncating(i), stepY * T.CreateTruncating(j)));
+				GridIterator.iterate(upper1, upper2, (i, j) => fn[i][j] += fKsi(xMin + stepX * T.CreateTruncating(i), yMin + stepY * T.CreateTruncating(j)));
 			}
 		}
 
@@ -90,7 +84,8 @@ namespace VLP2D.Model
 
 		protected void fftN2Calculate(T coef, Action<int> addPictureAction)
 		{
-			Parallel.For(0, cCores, optionsParallel, (core, loopState) =>
+			int cCores = GridIterator.optionsParallel.MaxDegreeOfParallelism;
+			Parallel.For(0, cCores, GridIterator.optionsParallel, (core, loopState) =>
 			{
 				if (loopState.IsStopped) return;
 				for (int i = 1 + core; i < N1; i += cCores)

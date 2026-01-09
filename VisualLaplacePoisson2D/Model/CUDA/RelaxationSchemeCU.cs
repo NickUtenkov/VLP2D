@@ -5,7 +5,7 @@ using VLP2D.Common;
 
 namespace VLP2D.Model
 {
-	internal class RelaxationSchemeCU<T> : Iterative1DScheme<T>, IScheme<T> where T : struct, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>
+	internal class RelaxationSchemeCU<T> : Iterative1DScheme<T>, IScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		T[] un;
 		readonly T eps;
@@ -16,10 +16,11 @@ namespace VLP2D.Model
 		object[] args;
 		bool uuChanged = false;
 
-		public RelaxationSchemeCU(int cXSegments, int cYSegments, T stepX, T stepY, Func<T, T, T> fKsi, bool isSeidel, T eps, int cudaDevice)
+		public RelaxationSchemeCU(RectangleData<T> rectData, Func<T, T, T> fKsi, bool isSeidel, T eps, int cudaDevice) :
+			base(rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY)
 		{
-			dimX = cXSegments + 1;
-			dimY = cYSegments + 1;
+			dimX = rectData.cXSegments + 1;
+			dimY = rectData.cYSegments + 1;
 			un = new T[dimX * dimY];
 
 			this.eps = eps;
@@ -31,8 +32,8 @@ namespace VLP2D.Model
 			T _4 = T.CreateTruncating(4);
 			if (!equalSteps) coef = T.One / (_2 / stepX2 + _2 / stepY2);
 
-			T sinX = T.Sin(T.Pi / (T.CreateTruncating(cXSegments) * _2));//[SNR] p.382(bottom)
-			T sinY = T.Sin(T.Pi / (T.CreateTruncating(cYSegments) * _2));//[SNR] p.382(bottom)
+			T sinX = T.Sin(T.Pi / (T.CreateTruncating(rectData.cXSegments) * _2));//[SNR] p.382(bottom)
+			T sinY = T.Sin(T.Pi / (T.CreateTruncating(rectData.cYSegments) * _2));//[SNR] p.382(bottom)
 			T sumStep2 = stepX2 + stepY2;
 			T lyambdaMin = stepY2 * _2 / sumStep2 * sinX * sinX + stepX2 * _2 / sumStep2 * sinY * sinY;//[SNR] p.382(bottom)
 			T omega = _2 / (T.One + T.Sqrt(lyambdaMin * (_2 - lyambdaMin)));//[SNR] p.379(14)
@@ -92,7 +93,7 @@ namespace VLP2D.Model
 			{
 				T[] fnFloat = new T[dimX * dimY];//exterior points are not used
 				T premultiply = equalSteps ? stepX2 : T.One;
-				GridIterator.iterate(dimX - 1, dimY - 1, (i, j) => fnFloat[i * dimY + j] = premultiply * fKsi(stepX * T.CreateTruncating(i), stepY * T.CreateTruncating(j)));
+				GridIterator.iterate(dimX - 1, dimY - 1, (i, j) => fnFloat[i * dimY + j] = premultiply * fKsi(xMin + stepX * T.CreateTruncating(i), yMin + stepY * T.CreateTruncating(j)));
 				fnCU = fnFloat;
 
 				args = [0, inoutCU.DevicePointer, fnCU.DevicePointer, flagCU.DevicePointer];

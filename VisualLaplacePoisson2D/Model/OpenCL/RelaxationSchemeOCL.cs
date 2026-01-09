@@ -5,7 +5,7 @@ using VLP2D.Common;
 
 namespace VLP2D.Model
 {
-	public class RelaxationSchemeOCL<T> : Iterative1DScheme<T>, IScheme<T> where T : struct, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>
+	class RelaxationSchemeOCL<T> : Iterative1DScheme<T>, IScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		readonly T stepX2, stepY2, eps, coef;
 		T omega, rJacobi2;
@@ -24,18 +24,19 @@ namespace VLP2D.Model
 		object[] argsK;
 		T _4 = T.CreateTruncating(4);
 
-		public RelaxationSchemeOCL(int cXSegments, int cYSegments, T stepX, T stepY, Func<T, T, T> fKsi, bool isSeidel, bool isChebyshIn, T eps, PlatformOCL platform, DeviceOCL device)
+		public RelaxationSchemeOCL(RectangleData<T> rectData, Func<T, T, T> fKsi, bool isSeidel, bool isChebyshIn, T eps, PlatformOCL platform, DeviceOCL device) :
+			base(rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY)
 		{
 			UtilsCL.checkDeviceSupportDouble<T>(device);
-			dimX = cXSegments + 1;
-			dimY = cYSegments + 1;
+			dimX = rectData.cXSegments + 1;
+			dimY = rectData.cYSegments + 1;
 			un0 = new T[dimX * dimY];
 			this.eps = eps;
 			stepX2 = stepX * stepX;
 			stepY2 = stepY * stepY;
 			T _2 = T.CreateTruncating(2);
-			T _cXSegments = T.CreateTruncating(cXSegments);
-			T _cYSegments = T.CreateTruncating(cYSegments);
+			T _cXSegments = T.CreateTruncating(rectData.cXSegments);
+			T _cYSegments = T.CreateTruncating(rectData.cYSegments);
 			bool equalSteps = T.Abs(stepX - stepY) < T.Min(stepX, stepY) / T.CreateTruncating(100);//less than one percent
 			if (!equalSteps) coef = T.One / (_2 / stepX2 + _2 / stepY2);
 			isChebysh = !isSeidel && isChebyshIn;
@@ -50,7 +51,7 @@ namespace VLP2D.Model
 				if (fKsi != null)
 				{
 					T premultiply = equalSteps ? stepX2 : T.One;
-					GridIterator.iterate(dimX - 1, dimY - 1, (i, j) => un0[i * dimY + j] = premultiply * fKsi(stepX * T.CreateTruncating(i), stepY * T.CreateTruncating(j)));
+					GridIterator.iterate(dimX - 1, dimY - 1, (i, j) => un0[i * dimY + j] = premultiply * fKsi(xMin + stepX * T.CreateTruncating(i), yMin + stepY * T.CreateTruncating(j)));
 					fn = new BufferOCL<T>(commands.Context, MemoryFlagsOCL.ReadOnly | MemoryFlagsOCL.CopyHostPointer, un0);
 				}
 			}

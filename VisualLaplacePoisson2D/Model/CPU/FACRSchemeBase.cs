@@ -9,7 +9,7 @@ using static VLP2D.Common.UtilsPict;
 
 namespace VLP2D.Model
 {
-	class FACRSchemeBase<T> : DirectJagged2Scheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>
+	class FACRSchemeBase<T> : DirectJagged2Scheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		protected interface IProgonka
 		{
@@ -18,13 +18,12 @@ namespace VLP2D.Model
 			void progonkaWithCoeff(T coeff, int idxAlfa, int rowRes, int k);
 		}
 		protected int M, L, ML;
-		protected ParallelOptions optionsParallel;
 		protected List<BitmapSource> lstBitmap;
 		protected Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap;
 		protected float[][] unShow;
 		protected Action<double> reportProgress;
 		protected int progressSteps, curProgress;
-		protected T stepX2, stepY2, stepX, stepY;
+		protected T stepX2, stepY2;
 		protected Func<T, T, T> funcKsi;
 		protected FFTCalculator<T> fft;
 		protected bool iterationsCanceled;
@@ -34,25 +33,22 @@ namespace VLP2D.Model
 		protected IProgonka progonka;
 		T _2 = T.CreateTruncating(2);
 
-		public FACRSchemeBase(int cXSegments, int cYSegments, T stepXIn, T stepYIn, int cCores, Func<T, T, T> fKsi, int paramL, List<BitmapSource> lstBitmap, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn) :
-			base(cXSegments + 1, cYSegments + 1, fKsi == null)
+		public FACRSchemeBase(RectangleData<T> rectData, Func<T, T, T> fKsi, int paramL, List<BitmapSource> lstBitmap, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn) :
+			base(rectData.cXSegments + 1, rectData.cYSegments + 1, rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY, fKsi == null)
 		{
-			stepX = stepXIn;
-			stepY = stepYIn;
-			stepX2 = stepXIn * stepXIn;
-			stepY2 = stepYIn * stepYIn;
+			stepX2 = stepX * stepX;
+			stepY2 = stepY * stepY;
 			funcKsi = fKsi;
 			reportProgress = reportProgressIn;
-			this.cCores = cCores;
-			optionsParallel = new ParallelOptions() { MaxDegreeOfParallelism = cCores };
+			this.cCores = GridIterator.optionsParallel.MaxDegreeOfParallelism;
 			L = paramL;
 
 			this.lstBitmap = lstBitmap;
 			this.fCreateBitmap = fCreateBitmap;
 			if (lstBitmap != null)
 			{
-				unShow = new float[cXSegments + 1][];
-				for (int i = 0; i < cXSegments + 1; i++) unShow[i] = new float[cYSegments + 1];
+				unShow = new float[rectData.cXSegments + 1][];
+				for (int i = 0; i < rectData.cXSegments + 1; i++) unShow[i] = new float[rectData.cYSegments + 1];
 			}
 
 			if (unShow != null) addPictureAction = (j) =>
@@ -67,7 +63,7 @@ namespace VLP2D.Model
 
 		protected void FFTCalculate(int N, Func<int, int, T> input, Action<int, int, T> act, Action<int> addPictureAction)
 		{
-			Parallel.For(0, cCores, optionsParallel, (core, loopState) =>
+			Parallel.For(0, cCores, GridIterator.optionsParallel, (core, loopState) =>
 			{
 				if (loopState.IsStopped) return;
 				for (int j = core + 1; j <= N - 1; j += cCores)//1 ≤ j ≤ N - 1
@@ -125,7 +121,7 @@ namespace VLP2D.Model
 				generateSqrtCoefs<T>(l - 1, (i, val) => diag[i] = (diagElem + val));
 				cMatrices = diag.GetUpperBound(0) + 1;
 				int n = 1 << (l - 1);
-				Parallel.For(0, cCores, optionsParallel, (core, loopState) =>
+				Parallel.For(0, cCores, GridIterator.optionsParallel, (core, loopState) =>
 				{
 					if (loopState.IsStopped) return;
 					for (int i1 = core + 1; i1 < m; i1 += cCores)
@@ -151,7 +147,7 @@ namespace VLP2D.Model
 		{
 			int[] matrixOrder = UtilsChebysh.reductionParams(L);//no need ?!
 			T[][] diagElems = new T[cCores][];
-			Parallel.For(0, cCores, optionsParallel, (core, loopState) =>
+			Parallel.For(0, cCores, GridIterator.optionsParallel, (core, loopState) =>
 			{
 				diagElems[core] = new T[1 << L];
 				if (loopState.IsStopped) return;
@@ -190,7 +186,7 @@ namespace VLP2D.Model
 				for (int i = 0; i < coefs.Length; i++) kUp[i] = progonka.calcAlpha(step2DivStep2 * coefs[i] + _2, i);
 				int mL = N >> l;
 				int idxDelta = 1 << (l - 1);
-				Parallel.For(0, cCores, optionsParallel, (core, loopState) =>
+				Parallel.For(0, cCores, GridIterator.optionsParallel, (core, loopState) =>
 				{
 					if (loopState.IsStopped) return;
 					for (int iLoop = core + 1; iLoop <= mL; iLoop += cCores)
@@ -246,7 +242,7 @@ namespace VLP2D.Model
 
 		protected void initRigthHandSide()
 		{//[SNR] p.199, above (2)
-			if (funcKsi != null) GridIterator.iterate(N1, N2, (i, j) => un[i][j] = funcKsi(stepX * T.CreateTruncating(i), stepY * T.CreateTruncating(j)));
+			if (funcKsi != null) GridIterator.iterate(N1, N2, (i, j) => un[i][j] = funcKsi(xMin + stepX * T.CreateTruncating(i), yMin + stepY * T.CreateTruncating(j)));
 		}
 
 		protected void transferBoundaryValuesToNearBoundaryNodes()

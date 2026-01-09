@@ -6,9 +6,7 @@ namespace VLP2D.Model
 {
 	public class VLPRectangleParams
 	{
-		public int cXSegmentsOriginal, cYSegmentsOriginal;
 		public int cXSegments, cYSegments;
-		public double stepX, stepY;
 		public Dictionary<string, int[]> maxCPUIters;
 		public Dictionary<string, int[]> maxOCLIters;
 		public Dictionary<string, int[]> maxCUDAIters;
@@ -16,15 +14,16 @@ namespace VLP2D.Model
 		public string fKsi;
 		public string funcLeft, funcRight, funcTop, funcBottom;
 		public string funcBoundary, funcAnalytic;
+		public string xMin, yMin;
 		public string xMax, yMax;
 		public String name { get; set; }//property because of binding
 
-		public VLPRectangleParams(string xMax, string yMax, int cXSegments, int cYSegments, Dictionary<string, int[]> itersCPU, Dictionary<string, int[]> itersOCL, Dictionary<string, int[]> itersCUDA, Dictionary<string, double> dictEps, string fKsi, string funcLeft, string funcRight, string funcTop, string funcBottom, string funcBoundary, string funcAnalytic, string name)
+		public VLPRectangleParams(string xMin, string yMin, string xMax, string yMax, int cXSegments, int cYSegments, Dictionary<string, int[]> itersCPU, Dictionary<string, int[]> itersOCL, Dictionary<string, int[]> itersCUDA, Dictionary<string, double> dictEps, string fKsi, string funcLeft, string funcRight, string funcTop, string funcBottom, string funcBoundary, string funcAnalytic, string name)
 		{
+			this.xMin = xMin;
+			this.yMin = yMin;
 			this.xMax = xMax;
 			this.yMax = yMax;
-			cXSegmentsOriginal = cXSegments;
-			cYSegmentsOriginal = cYSegments;
 			this.cXSegments = cXSegments;
 			this.cYSegments = cYSegments;
 

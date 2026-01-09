@@ -12,7 +12,7 @@ using static VLP2D.Common.UtilsElapsed;
 
 namespace VLP2D.Model
 {
-	class VariablesSeparationSchemeNoProgonkaOCL<T> : VariablesSeparationSchemeOCL<T> where T : struct, INumber<T>, ITrigonometricFunctions<T>, IMinMaxValue<T>
+	class VariablesSeparationSchemeNoProgonkaOCL<T> : VariablesSeparationSchemeOCL<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>
 	{
 		long maxFFTN1Vectors;
 		int allFFTN1WorkSize;
@@ -22,8 +22,8 @@ namespace VLP2D.Model
 		Dictionary<int, CLFFTPlan> plans;
 		BufferOCL<T> dataAux = null;
 
-		public VariablesSeparationSchemeNoProgonkaOCL(int cXSegments, int cYSegments, T stepX, T stepY, Func<T, T, T> fKsi, ParallelOptions optionsParallel, PlatformOCL platform, DeviceOCL device, Action<double> reportProgressIn) :
-			base(cXSegments, cYSegments, stepX, stepY, fKsi, optionsParallel, platform, device, reportProgressIn)
+		public VariablesSeparationSchemeNoProgonkaOCL(RectangleData<T> rectData, Func<T, T, T> fKsi, PlatformOCL platform, DeviceOCL device, Action<double> reportProgressIn) :
+			base(rectData, fKsi, platform, device, reportProgressIn)
 		{
 			allFFTN2WorkSize = dim1;
 			allFFTN1WorkSize = dim2;

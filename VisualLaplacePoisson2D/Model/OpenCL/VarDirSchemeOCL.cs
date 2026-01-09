@@ -5,13 +5,13 @@ using VLP2D.Common;
 
 namespace VLP2D.Model
 {
-	class VarDirSchemeOCL<T> : ProgonkaSchemeOCL<T> where T : struct, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IPowerFunctions<T>, IMinMaxValue<T>
+	class VarDirSchemeOCL<T> : ProgonkaSchemeOCL<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IPowerFunctions<T>, IMinMaxValue<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		JordanSpeedup<T> jrd;
 		bool equalSteps;
 
-		public VarDirSchemeOCL(int cXSegments, int cYSegments, T stepX, T stepY, T eps, Func<T, T, T> fKsi, bool isJordan, PlatformOCL platform, DeviceOCL device) :
-			base(cXSegments, cYSegments, stepX, stepY, fKsi, eps, platform, device, isJordan)
+		public VarDirSchemeOCL(RectangleData<T> rectData, T eps, Func<T, T, T> fKsi, bool isJordan, PlatformOCL platform, DeviceOCL device) :
+			base(rectData, fKsi, eps, platform, device, isJordan)
 		{
 			equalSteps = T.Abs(stepX - stepY) < T.Min(stepX, stepY) / T.CreateTruncating(100);
 

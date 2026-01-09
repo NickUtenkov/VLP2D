@@ -4,9 +4,9 @@ using VLP2D.Common;
 
 namespace VLP2D.Model
 {
-	public class GradientDescentScheme<T> : Iterative2DScheme<T>, IScheme<T> where T : INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>
+	class GradientDescentScheme<T> : Iterative2DScheme<T>, IScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{//steepest descent
-		T stepX, stepY, stepX2, stepY2, eps;
+		T stepX2, stepY2, eps;
 		T[,] un1;
 		T[,] fn;
 		Action<int, int> funcFk;
@@ -17,25 +17,24 @@ namespace VLP2D.Model
 		T _2 = T.CreateTruncating(2);
 		T _4 = T.CreateTruncating(4);
 
-		public GradientDescentScheme(int cXSegments, int cYSegments, T stepX, T stepY, Func<T, T, T> fKsi, T eps)
+		public GradientDescentScheme(RectangleData<T> rectData, Func<T, T, T> fKsi, T eps) :
+			base(rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY)
 		{
-			this.stepX = stepX;
-			this.stepY = stepY;
 			this.eps = eps;
 			stepX2 = stepX * stepX;
 			stepY2 = stepY * stepY;
-			un0 = new T[cXSegments + 1, cYSegments + 1];
-			un1 = new T[cXSegments + 1, cYSegments + 1];
+			un0 = new T[rectData.cXSegments + 1, rectData.cYSegments + 1];
+			un1 = new T[rectData.cXSegments + 1, rectData.cYSegments + 1];
 
-			rk = new T[cXSegments + 1, cYSegments + 1];
-			columnSum = new T[cXSegments + 1];
+			rk = new T[rectData.cXSegments + 1, rectData.cYSegments + 1];
+			columnSum = new T[rectData.cXSegments + 1];
 			if (fKsi == null) funcFk = funcFkLap;
 			else
 			{
 				funcFk = funcFkPoi;
 
 				fn = new T[un0.GetUpperBound(0) + 1, un0.GetUpperBound(1) + 1];//exterior points are not used
-				GridIterator.iterate(fn.GetUpperBound(0), fn.GetUpperBound(1), (i, j) => fn[i, j] = fKsi(stepX * T.CreateTruncating(i), stepY * T.CreateTruncating(j)));
+				GridIterator.iterate(fn.GetUpperBound(0), fn.GetUpperBound(1), (i, j) => fn[i, j] = fKsi(xMin + stepX * T.CreateTruncating(i), yMin + stepY * T.CreateTruncating(j)));
 			}
 
 		}

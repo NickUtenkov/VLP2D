@@ -17,7 +17,7 @@ using static VLP2D.Common.UtilsPict;
 
 namespace VLP2D.Model
 {
-	internal class MarchingSchemeCU<T> : Direct1DSeparateBoundariesScheme<T>, IScheme<T> where T : struct, INumber<T>, IMinMaxValue<T>, ITrigonometricFunctions<T>, IRootFunctions<T>
+	class MarchingSchemeCU<T> : Direct1DSeparateBoundariesScheme<T>, IScheme<T> where T : unmanaged, INumber<T>, IMinMaxValue<T>, ITrigonometricFunctions<T>, IRootFunctions<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>, ILogarithmicFunctions<T>
 	{
 		CudaContext ctx;
 		CudaDeviceVariable<T> pq0, pq1, pq2;
@@ -28,22 +28,20 @@ namespace VLP2D.Model
 		T[] unShow;
 		Func<T, T, T> fKsi;
 		readonly int k, L, L2, M, cCores, fftInOutSize;
-		T stepX, stepY, cBase, ai, bi, subsupra, normFactor;//subsupra - subdiagonal,supradiagonal
+		T cBase, ai, bi, subsupra, normFactor;//subsupra - subdiagonal,supradiagonal
 		List<BitmapSource> lstBitmap;
 
 		Action<double> reportProgress;
 		float curProgress, oldProgress;
 		bool iterationsCanceled;
-		CancellationTokenSource cts = new CancellationTokenSource();
-		readonly ParallelOptions optionsParallel;
 		int dim1Fn, dim2Fn;
 		IFFTCU<T> fft;
 		Dictionary<int, CudaFFTPlanMany> plans;
 		T _2 = T.CreateTruncating(2);
 		T _Ny;
 
-		public MarchingSchemeCU(int cXSegments, int cYSegments, T stepXIn, T stepYIn, int cCores, Func<T, T, T> fKsiIn, int paramL, List<BitmapSource> lstBitmap0, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn, int cudaDevice) :
-			base(cXSegments, cYSegments, fCreateBitmap)
+		public MarchingSchemeCU(RectangleData<T> rectData, Func<T, T, T> fKsiIn, int paramL, List<BitmapSource> lstBitmap0, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Action<double> reportProgressIn, int cudaDevice) :
+			base(rectData.cXSegments, rectData.cYSegments, rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY, fCreateBitmap)
 		{
 			ctx = new CudaContext(cudaDevice);
 			dim1Fn = Nx - 1;
@@ -59,8 +57,6 @@ namespace VLP2D.Model
 			//Bank Rose Marching Algorithms for Elliptic Boundary Value Problems. I The Constant Coefficient Case.pdf p.21(6.8)
 			normFactor = T.Sqrt(_2 / _Ny);//normalizing factor;Demmel rus 281
 
-			stepX = stepXIn;
-			stepY = stepYIn;
 			subsupra = stepX * stepX / (stepY * stepY);//[SNR] p.106, (4)
 			ai = subsupra;//subdiagonal,[SNR] p.106, (4)
 			bi = subsupra;//supradiagonal,[SNR] p.106, (4)
@@ -76,8 +72,7 @@ namespace VLP2D.Model
 
 			cBase = (T.One + subsupra) * _2;//[SNR] p.106, (4)
 
-			this.cCores = cCores;
-			optionsParallel = new ParallelOptions() { MaxDegreeOfParallelism = cCores, CancellationToken = cts.Token };
+			this.cCores = GridIterator.optionsParallel.MaxDegreeOfParallelism;
 
 			if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
 			{
@@ -178,15 +173,15 @@ static __device__ __constant__ bool ksiIsNull;
 		void initFj()
 		{
 			T stepX2 = stepX * stepX;
-			if (fKsi != null) GridIterator.iterate(0, Nx - 1, 1, Ny, (i, j) => { fn[i * dim2Fn + j] += stepX2 * fKsi(stepX * T.CreateTruncating(i + 1), stepY * T.CreateTruncating(j)); });//[SNR] p.123 (8),[SNE] p.120 (8)
+			if (fKsi != null) GridIterator.iterate(0, Nx - 1, 1, Ny, (i, j) => { fn[i * dim2Fn + j] += stepX2 * fKsi(xMin + stepX * T.CreateTruncating(i + 1), yMin + stepY * T.CreateTruncating(j)); });//[SNR] p.123 (8),[SNE] p.120 (8)
 
-			Parallel.For(0, Nx - 1, optionsParallel, (i) =>
+			Parallel.For(0, Nx - 1, GridIterator.optionsParallel, (i) =>
 			{
 				fn[i * dim2Fn + 1] += subsupra * bndB[i];//[SNR] p.123 (8),[SNE] p.120 (8)
 				fn[i * dim2Fn + Ny - 1] += subsupra * bndT[i];//[SNR] p.123 (8),[SNE] p.120 (8)
 			});
 
-			Parallel.For(1, Ny, optionsParallel, (j) =>
+			Parallel.For(1, Ny, GridIterator.optionsParallel, (j) =>
 			{
 				fn[0 * dim2Fn + j] += bndL[j - 1];//analog [SNR] p.123 (8),[SNE] p.120 (8)
 				fn[(Nx - 2) * dim2Fn + j] += bndR[j - 1];//analog [SNR] p.123 (8),[SNE] p.120 (8)
@@ -330,23 +325,22 @@ static __device__ __constant__ bool ksiIsNull;
 		void restoreBounds(T[] uu)
 		{
 			int cols = Ny + 1;
-			Parallel.For(1, Nx, optionsParallel, (i) =>
+			Parallel.For(1, Nx, GridIterator.optionsParallel, (i) =>
 			{
 				uu[i * cols + 0] = bndB[i - 1];
 				uu[i * cols + Ny] = bndT[i - 1];
 			});
 
-			Parallel.For(1, Ny, optionsParallel, (j) =>
+			Parallel.For(1, Ny, GridIterator.optionsParallel, (j) =>
 			{
 				uu[0 * cols + j] = bndL[j - 1];
 				uu[Nx * cols + j] = bndR[j - 1];
 			});
 
-			T nan = T.Zero / T.Zero;
-			uu[0 * cols + 0] = nan;
-			uu[Nx * cols + 0] = nan;
-			uu[0 * cols + Ny] = nan;
-			uu[Nx * cols + Ny] = nan;
+			uu[0 * cols + 0] = unLB;
+			uu[Nx * cols + 0] = unRB;
+			uu[0 * cols + Ny] = unLT;
+			uu[Nx * cols + Ny] = unRT;
 		}
 
 		public virtual void initAfterBoundariesAndInitialIterationInited()
@@ -358,22 +352,22 @@ static __device__ __constant__ bool ksiIsNull;
 
 				void fillBounds(T[] uu)
 				{
-					Parallel.For(1, Nx, optionsParallel, (i) =>
+					Parallel.For(1, Nx, GridIterator.optionsParallel, (i) =>
 					{
 						uu[i * (Ny + 1) + 0] = bndB[i - 1];
 						uu[i * (Ny + 1) + Ny] = bndT[i - 1];
 					});
 
-					Parallel.For(1, Ny, optionsParallel, (j) =>
+					Parallel.For(1, Ny, GridIterator.optionsParallel, (j) =>
 					{
 						uu[0 * (Ny + 1) + j] = bndL[j - 1];
 						uu[Nx * (Ny + 1) + j] = bndR[j - 1];
 					});
 
-					uu[0 * (Ny + 1) + 0] = (uu[1 * (Ny + 1) + 0] + uu[0 * (Ny + 1) + 1]) / _2;
-					uu[Nx * (Ny + 1) + 0] = (uu[(Nx - 1) * (Ny + 1) + 0] + uu[Nx * (Ny + 1) + 1]) / _2;
-					uu[0 * (Ny + 1) + Ny] = (uu[1 * (Ny + 1) + Ny] + uu[0 * (Ny + 1) + Ny - 1]) / _2;
-					uu[Nx * (Ny + 1) + Ny] = (uu[(Nx - 1) * (Ny + 1) + Ny] + uu[Nx * (Ny + 1) + Ny - 1]) / _2;
+					uu[0 * (Ny + 1) + 0] = unLB;
+					uu[Nx * (Ny + 1) + 0] = unRB;
+					uu[0 * (Ny + 1) + Ny] = unLT;
+					uu[Nx * (Ny + 1) + Ny] = unRT;
 				}
 			}
 		}

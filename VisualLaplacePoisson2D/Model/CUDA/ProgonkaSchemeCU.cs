@@ -5,7 +5,7 @@ using VLP2D.Common;
 
 namespace VLP2D.Model
 {
-	class ProgonkaSchemeCU<T> : Iterative1DScheme<T>, IScheme<T> where T : struct, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>
+	class ProgonkaSchemeCU<T> : Iterative1DScheme<T>, IScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		protected T stepX2, stepY2, dt, eps;
 		protected CudaDeviceVariable<T> unmCU;
@@ -25,12 +25,13 @@ namespace VLP2D.Model
 		bool unChanged = false;
 		protected T _2 = T.CreateTruncating(2);
 
-		public ProgonkaSchemeCU(int cXSegments1, int cYSegments1, T stepX, T stepY, T epsIn, bool bProgonkaFixedIters, Func<T, T, T> fKsi, int cudaDevice)
+		public ProgonkaSchemeCU(RectangleData<T> rectData, T epsIn, bool bProgonkaFixedIters, Func<T, T, T> fKsi, int cudaDevice) :
+			base(rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY)
 		{
 			stepX2 = stepX * stepX;
 			stepY2 = stepY * stepY;
-			cXSegments = cXSegments1;
-			cYSegments = cYSegments1;
+			cXSegments = rectData.cXSegments;
+			cYSegments = rectData.cYSegments;
 
 			dimX = cXSegments + 1;
 			dimY = cYSegments + 1;
@@ -69,7 +70,7 @@ namespace VLP2D.Model
 			if (fKsi != null)
 			{
 				T[] fnFloat = new T[dimX * dimY];//exterior points are not used; can't iterate on fnCU, throws exceptions
-				GridIterator.iterate(dimX - 1, dimY - 1, (i, j) => fnFloat[i * dimY + j] = fKsi(stepX * T.CreateTruncating(i), stepY * T.CreateTruncating(j)));
+				GridIterator.iterate(dimX - 1, dimY - 1, (i, j) => fnFloat[i * dimY + j] = fKsi(xMin + stepX * T.CreateTruncating(i), yMin + stepY * T.CreateTruncating(j)));
 				fnCU = fnFloat;
 				fnFloat = null;
 			}

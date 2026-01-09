@@ -11,7 +11,7 @@ using static VLP2D.Common.UtilsPict;
 
 namespace VLP2D.Model
 {
-	class CyclicReductionSamarskiiNikolaevScheme_BothPrecision<T> : CyclicReductionScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>
+	class CyclicReductionSamarskiiNikolaevScheme_BothPrecision<T> : CyclicReductionScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		T[][] ac,vv;//accumulator
 		T[][] p;
@@ -25,14 +25,15 @@ namespace VLP2D.Model
 		T _16 = T.CreateTruncating(16.0);
 		T _30 = T.CreateTruncating(30.0);
 
-		public CyclicReductionSamarskiiNikolaevScheme_BothPrecision(int cXSegments, int cYSegments, T stepXIn, T stepYIn, bool morePrecision, int cCores, Func<T, T, T> fKsi, List<BitmapSource> lstBitmap0, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap0, Action<double> reportProgressIn) :
-			base(cXSegments, cYSegments, stepXIn, stepYIn, cCores, fKsi, lstBitmap0, fCreateBitmap0, reportProgressIn)
+		public CyclicReductionSamarskiiNikolaevScheme_BothPrecision(RectangleData<T> rectData, bool morePrecision, Func<T, T, T> fKsi, List<BitmapSource> lstBitmap0, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap0, Action<double> reportProgressIn) :
+			base(rectData, fKsi, lstBitmap0, fCreateBitmap0, reportProgressIn)
 		{
 			//originally(in math description - [SNR] p.138) p is (N1 - 1)*(N2 - 1) size, but share the same memory with un(which is solution)
 			//here it is interior part of un, which is (N1 + 1)*(N2 + 1) size
 			//so it is used with shifted by 1 indeces
 			p = un;
 
+			int cCores = GridIterator.optionsParallel.MaxDegreeOfParallelism;
 			ac = new T[cCores][];//use less memory - cCores*(N2 - 1) instead of (N1 - 1)*(N2 - 1)
 			vv = new T[cCores][];//use less memory - cCores*(N2 - 1) instead of (N1 - 1)*(N2 - 1)
 			for (int i = 0; i < cCores; i++)
@@ -45,8 +46,8 @@ namespace VLP2D.Model
 			for (int i = 0; i < cCores; i++) alfa[i] = new T[N2];
 			alfaUpperBound = progonkaUpperBound;
 
-			stepX2 = stepXIn * stepXIn;
-			stepY2 = stepYIn * stepYIn;
+			stepX2 = stepX * stepX;
+			stepY2 = stepY * stepY;
 			this.morePrecision = morePrecision;
 			derivativeCoeff = morePrecision ? (stepX2 + stepY2) / _12 : T.Zero;
 			if (morePrecision) operatorB = operatorBMorePrecision;
@@ -60,7 +61,7 @@ namespace VLP2D.Model
 		override public T doIteration(int iter)
 		{//Q = 9.5*N2*N1*Log(N1,2) - 8*N2*N1;N2 can be == N1
 		 // p_j(0)  = F_j, [SNR] p.138 1) - not (1)
-			int cCores = optionsParallel.MaxDegreeOfParallelism;
+			int cCores = GridIterator.optionsParallel.MaxDegreeOfParallelism;
 			initRigthHandSide(p);
 			transferBottomTopToInterior(p);
 
@@ -76,7 +77,7 @@ namespace VLP2D.Model
 		void forwardWay()
 		{
 			T _05 = T.CreateTruncating(0.5);
-			int cCores = optionsParallel.MaxDegreeOfParallelism;
+			int cCores = GridIterator.optionsParallel.MaxDegreeOfParallelism;
 			for (int k = 1; k <= n - 1; k++)
 			{
 				int m = 1 << (k - 1);
@@ -84,7 +85,7 @@ namespace VLP2D.Model
 
 				int count1 = N1 / t - 1;//from t - 1 to N1 - t - 1 step t (+ 1 for count)
 				int loopCount = Math.Min(count1, cCores);
-				Parallel.For(0, loopCount, optionsParallel, core =>
+				Parallel.For(0, loopCount, GridIterator.optionsParallel, core =>
 				{
 					for (int idx = core; idx < count1; idx += cCores)
 					{
@@ -106,7 +107,7 @@ namespace VLP2D.Model
 
 		void reverseWay()
 		{
-			int cCores = optionsParallel.MaxDegreeOfParallelism;
+			int cCores = GridIterator.optionsParallel.MaxDegreeOfParallelism;
 			for (int k = n; k >= 1; k--)
 			{
 				int m = 1 << (k - 1);
@@ -114,7 +115,7 @@ namespace VLP2D.Model
 
 				int count2 = N1 / t;//from m - 1 to N1 - m - 1 step t (+ 1 for count)
 				int loopCount = Math.Min(count2, cCores);
-				Parallel.For(0, loopCount, optionsParallel, core =>
+				Parallel.For(0, loopCount, GridIterator.optionsParallel, core =>
 				{
 					for (int idx = core; idx < count2; idx += cCores)
 					{

@@ -5,12 +5,12 @@ using VLP2D.Common;
 
 namespace VLP2D.Model
 {
-	class VarDirScheme<T> : ProgonkaScheme<T> where T : struct, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>
+	class VarDirScheme<T> : ProgonkaScheme<T> where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		JordanSpeedup<T> jrd;
 
-		public VarDirScheme(int cXSegments, int cYSegments, T stepX, T stepY, T eps, Func<T, T, T> fKsi, ParallelOptions optionsParallelIn, bool isJordan) :
-			base(cXSegments, cYSegments, stepX, stepY, eps, fKsi, optionsParallelIn)
+		public VarDirScheme(RectangleData<T> rectData, T eps, Func<T, T, T> fKsi, bool isJordan) :
+			base(rectData.cXSegments, rectData.cYSegments, rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY, eps, fKsi)
 		{//http://ikt.muctr.ru/html2/11/lek11_5.html
 			T stepX2DivY2 = stepX2 / stepY2;
 			T stepY2DivX2 = stepY2 / stepX2;
