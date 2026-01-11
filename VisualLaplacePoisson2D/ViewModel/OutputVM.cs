@@ -19,7 +19,7 @@ using static VLP2D.Common.UtilsPict;
 
 namespace VLP2D.ViewModel
 {
-	public class VLPRectangleOutputVM : ObservableObject, IVLPRectangleOutput
+	public class OutputVM : ObservableObject, IVLPRectangleOutput
 	{
 		IVLPRectangleModel pModel = null;
 		IVLPRectangleInput input = null;
@@ -605,7 +605,7 @@ namespace VLP2D.ViewModel
 			}
 		}
 
-		public VLPRectangleOutputVM()
+		public OutputVM()
 		{
 			picture3D = new Picture3D();
 		}

@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Nick Utenkov")]
 [assembly: AssemblyProduct("Visual Laplace/Poisson 2D")]
-[assembly: AssemblyCopyright("Copyright © 2020-25 Nick Utenkov")]
+[assembly: AssemblyCopyright("Copyright © 2020-26 Nick Utenkov")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

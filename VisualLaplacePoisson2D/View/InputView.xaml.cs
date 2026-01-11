@@ -2,9 +2,9 @@ using System.Windows.Controls;
 
 namespace VLP2D.View
 {
-	public partial class VLPRectangleOutputView : UserControl
+	public partial class InputView : UserControl
 	{
-		public VLPRectangleOutputView()
+		public InputView()
 		{
 			InitializeComponent();
 		}

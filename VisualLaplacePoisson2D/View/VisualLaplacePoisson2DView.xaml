@@ -3,22 +3,32 @@
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:inputView="clr-namespace:VLP2D.View"
 	xmlns:outputView="clr-namespace:VLP2D.View"
+	xmlns:ViewModel="clr-namespace:VLP2D.ViewModel"
 	xmlns:loc="clr-namespace:VLP2D.Properties"
 	>
 
+	<UserControl.DataContext>
+		<ViewModel:ViewVM/>
+	</UserControl.DataContext>
+
 	<Grid Background="White">
 		<Grid.ColumnDefinitions>
-			<ColumnDefinition Width="260"/>
+			<ColumnDefinition Width="{Binding inputWidth}"/>
 			<ColumnDefinition Width="*"/>
 		</Grid.ColumnDefinitions>
 		<StackPanel Grid.Column="0">
 			<!-- Parameters -->
-			<inputView:VLPRectangleInputView x:Name="VLPRectangleInputView" Margin="5,5,0,0"/>
+			<inputView:InputView x:Name="InputView" Margin="5,5,0,0"/>
 		</StackPanel>
 		<!-- Results -->
 		<!-- Using Grid to utilize all remaining height and width -->
 		<Grid Grid.Column="1">
-			<outputView:VLPRectangleOutputView x:Name="VLPRectangleOutputView"/>
+			<Button Height="23" Width="24" Margin="1,1,0,0" Content="⮀"
+				HorizontalAlignment="Left" VerticalAlignment="Top"
+				Command="{Binding toggleWidthCommand}"
+				>
+			</Button>
+			<outputView:OutputView x:Name="OutputView"/>
 		</Grid>
 	</Grid>
 </UserControl>

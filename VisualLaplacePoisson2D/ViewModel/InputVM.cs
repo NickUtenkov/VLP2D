@@ -11,7 +11,7 @@ using VLP2D.Properties;
 
 namespace VLP2D.ViewModel
 {
-	public class VLPRectangleInputVM : ObservableObject, IVLPRectangleInput
+	public class InputVM : ObservableObject, IVLPRectangleInput
 	{
 		IVLPRectangleOutput output = null;
 		public List<VLPRectangleParams> listParams { get; } = new List<VLPRectangleParams>();
@@ -37,7 +37,7 @@ namespace VLP2D.ViewModel
 		int savedLParam = int.MaxValue;
 		bool isPrepareCalculationAllowed = true;
 
-		public VLPRectangleInputVM()
+		public InputVM()
 		{
 			listOpenCLDevices.AddRange(UtilsCL.getGPUDevices());
 			listCUDADevices.AddRange(UtilsCU.getCUDADevices());
