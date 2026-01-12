@@ -11,10 +11,10 @@ using VLP2D.Properties;
 
 namespace VLP2D.ViewModel
 {
-	public class InputVM : ObservableObject, IVLPRectangleInput
+	public class InputVM : ObservableObject, IInputVM
 	{
-		IVLPRectangleOutput output = null;
-		public List<VLPRectangleParams> listParams { get; } = new List<VLPRectangleParams>();
+		IOutputVM output = null;
+		public List<TaskInputParams> listParams { get; } = new List<TaskInputParams>();
 		public List<String> listInterpolations { get; } = new List<string> { Resources.strMean, Resources.strArithMean, Resources.strPiecewise, Resources.strPiecewiseWeight };
 
 		public List<String> listCPUSchemes { get; } = new List<string> { Resources.strSimpleIteration, Resources.strSlidingIteration, Resources.strSOR, Resources.strSplitting,
@@ -32,7 +32,7 @@ namespace VLP2D.ViewModel
 		public List<String> listPrecisions { get; } = new List<string> { /*Resources.strPrecisionHalf,*/ Resources.strPrecisionFloat, Resources.strPrecisionDouble, Resources.strPrecisionDD128, Resources.strPrecisionQD256 };
 		public List<String> listVarSepMethods { get; } = new List<string> { Resources.strFFT, Resources.strProgonka, Resources.strReduction, Resources.strMarchingScalar };
 		public List<String> listCRMethods { get; } = new List<string> { Resources.strMethodSN, Resources.strMethodBM };
-		public VLPRectangleParams currentParams = null;
+		public TaskInputParams currentParams = null;
 		int[] paramsL = new int[1];
 		int savedLParam = int.MaxValue;
 		bool isPrepareCalculationAllowed = true;
@@ -49,7 +49,7 @@ namespace VLP2D.ViewModel
 			get { return new DelegateCommand(() => output?.allIterations()); }
 		}
 
-		public VLPRectangleParams getInputParameters()
+		public TaskInputParams getInputParameters()
 		{
 			return currentParams;
 		}
@@ -125,7 +125,7 @@ namespace VLP2D.ViewModel
 			return isCUDAComboBoxVisible ? deviceCUDASelectedIndex : -1;
 		}
 
-		public InterpolationEnumVLPRectangle getInterpolationIndex()
+		public InterpolationEnum getInterpolationIndex()
 		{
 			return interpolationIndex;
 		}
@@ -142,7 +142,7 @@ namespace VLP2D.ViewModel
 			return new PlatformAndSchemeIndex(PlatformEnum.CPU, (int)schemeCPUIndex);
 		}
 
-		public void setOutput(IVLPRectangleOutput inValue)
+		public void setOutput(IOutputVM inValue)
 		{
 			output = inValue;
 		}
@@ -183,7 +183,7 @@ namespace VLP2D.ViewModel
 		
 		void readTaskParams()
 		{
-			TaskParams taskParams = TaskParams.restore(currentParams.name);
+			TaskCalcParams taskParams = TaskCalcParams.restore(currentParams.name);
 			if (taskParams != null)
 			{
 				isPrepareCalculationAllowed = false;
@@ -196,7 +196,7 @@ namespace VLP2D.ViewModel
 				deviceOCLSelectedIndex = taskParams.idxDeviceOCL;
 				deviceCUDASelectedIndex = taskParams.idxDeviceCUDA;
 
-				interpolationIndex = (InterpolationEnumVLPRectangle)taskParams.idxInterpol;
+				interpolationIndex = (InterpolationEnum)taskParams.idxInterpol;
 				isVarSepProgonka = taskParams.isVarSepProgonka;
 				varSepIndex = taskParams.varSepMethod;
 				crIndex = taskParams.crMethod;
@@ -211,8 +211,8 @@ namespace VLP2D.ViewModel
 			}
 		}
 
-		InterpolationEnumVLPRectangle _interpolationIndex = InterpolationEnumVLPRectangle.Mean;
-		public InterpolationEnumVLPRectangle interpolationIndex
+		InterpolationEnum _interpolationIndex = InterpolationEnum.Mean;
+		public InterpolationEnum interpolationIndex
 		{
 			get { return _interpolationIndex; }
 			set
@@ -279,7 +279,7 @@ namespace VLP2D.ViewModel
 					schemeCPUIndex == SchemeCPUEnum.MatrixProgonka ||
 					schemeCPUIndex == SchemeCPUEnum.Marching ||
 					boundaryNull());
-				if (!showInterpolation) interpolationIndex = InterpolationEnumVLPRectangle.Mean;
+				if (!showInterpolation) interpolationIndex = InterpolationEnum.Mean;
 				showLParamSlider = !isOpenCLComboBoxVisible && schemeCPUIndex == SchemeCPUEnum.Marching || schemeCPUIndex == SchemeCPUEnum.IncompleteReduction;
 				if (showLParamSlider && (schemeCPUIndex == SchemeCPUEnum.Marching)) resetMarchingLParam();
 				if (showLParamSlider && (schemeCPUIndex == SchemeCPUEnum.IncompleteReduction)) resetFACRLParam(true);
@@ -300,7 +300,7 @@ namespace VLP2D.ViewModel
 					schemeOCLIndex == SchemeOCLEnum.IncompleteReductionOCL ||
 					schemeOCLIndex == SchemeOCLEnum.MarchingOCL ||
 					boundaryNull());
-				if (!showInterpolation) interpolationIndex = InterpolationEnumVLPRectangle.Mean;
+				if (!showInterpolation) interpolationIndex = InterpolationEnum.Mean;
 				showLParamSlider = (schemeOCLIndex == SchemeOCLEnum.IncompleteReductionOCL) || (schemeOCLIndex == SchemeOCLEnum.MarchingOCL);
 				if (showLParamSlider && (schemeOCLIndex == SchemeOCLEnum.IncompleteReductionOCL)) resetFACRLParam(false);
 				if (showLParamSlider && (schemeOCLIndex == SchemeOCLEnum.MarchingOCL)) resetMarchingLParam();
@@ -321,7 +321,7 @@ namespace VLP2D.ViewModel
 					schemeCUDAIndex == SchemeCUDAEnum.FACRCUDA ||
 					schemeCUDAIndex == SchemeCUDAEnum.MarchingCUDA ||
 					boundaryNull());
-				if (!showInterpolation) interpolationIndex = InterpolationEnumVLPRectangle.Mean;
+				if (!showInterpolation) interpolationIndex = InterpolationEnum.Mean;
 				showLParamSlider = (schemeCUDAIndex == SchemeCUDAEnum.FACRCUDA) || (schemeCUDAIndex == SchemeCUDAEnum.MarchingCUDA);
 				if (showLParamSlider && (schemeCUDAIndex == SchemeCUDAEnum.FACRCUDA)) resetFACRLParam(false);
 				if (showLParamSlider && (schemeCUDAIndex == SchemeCUDAEnum.MarchingCUDA)) resetMarchingLParam();
@@ -1035,7 +1035,7 @@ namespace VLP2D.ViewModel
 				var txtFiles = Directory.EnumerateFiles(inputDataDirectory(), "*.txt", SearchOption.AllDirectories);
 				foreach (string currentFile in txtFiles)
 				{
-					VLPRectangleParams curParams = inputParser.parseFile(currentFile);
+					TaskInputParams curParams = inputParser.parseFile(currentFile);
 					if (curParams != null) listParams.Add(curParams);
 				}
 			}
@@ -1052,12 +1052,12 @@ namespace VLP2D.ViewModel
 
 	}
 
-	public interface IVLPRectangleInput
+	public interface IInputVM
 	{
-		VLPRectangleParams getInputParameters();
+		TaskInputParams getInputParameters();
 		bool shouldVisualize();
 		bool shouldSaveAnimatedGIF();
-		InterpolationEnumVLPRectangle getInterpolationIndex();
+		InterpolationEnum getInterpolationIndex();
 		int precisionIndex();
 		PlatformAndSchemeIndex getPlatformAndSchemeIndex();
 		bool shouldMultiThread();
@@ -1079,6 +1079,6 @@ namespace VLP2D.ViewModel
 		bool isCUDAUsing();
 		int deviceOCLIndex();
 		int deviceCUDAIndex();
-		void setOutput(IVLPRectangleOutput inValue);
+		void setOutput(IOutputVM inValue);
 	}
 }

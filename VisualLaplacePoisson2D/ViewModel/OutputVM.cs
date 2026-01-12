@@ -19,10 +19,10 @@ using static VLP2D.Common.UtilsPict;
 
 namespace VLP2D.ViewModel
 {
-	public class OutputVM : ObservableObject, IVLPRectangleOutput
+	public class OutputVM : ObservableObject, IOutputVM
 	{
-		IVLPRectangleModel pModel = null;
-		IVLPRectangleInput input = null;
+		IModel pModel = null;
+		IInputVM input = null;
 		List<BitmapSource> listMap = new List<BitmapSource>();
 		List<BitmapSource> listMapDiff = new List<BitmapSource>();
 		bool bPrepareCalculationWasCalled;
@@ -30,7 +30,7 @@ namespace VLP2D.ViewModel
 		Adapter2D<float> adapterInterpolatedArray;
 		Picture3D picture3D;
 
-		public void setInput(IVLPRectangleInput inValue)
+		public void setInput(IInputVM inValue)
 		{
 			input = inValue;
 		}
@@ -89,10 +89,10 @@ namespace VLP2D.ViewModel
 		{
 			bPrepareCalculationWasCalled = true;
 
-			VLPRectangleParams inputValues = input.getInputParameters();
+			TaskInputParams inputValues = input.getInputParameters();
 			if (inputValues == null) return;
 
-			InterpolationEnumVLPRectangle idxInterpol = input.getInterpolationIndex();
+			InterpolationEnum idxInterpol = input.getInterpolationIndex();
 			PlatformAndSchemeIndex platformScheme = input.getPlatformAndSchemeIndex();
 			bool isMultiThread = input.shouldMultiThread();
 
@@ -143,7 +143,7 @@ namespace VLP2D.ViewModel
 
 		public void setModelMethodsParams()
 		{
-			VLPRectangleParams inputValues = input.getInputParameters();
+			TaskInputParams inputValues = input.getInputParameters();
 			if (inputValues == null) return;
 
 			MethodsParams miscParams;
@@ -193,7 +193,7 @@ namespace VLP2D.ViewModel
 
 		void saveTaskParams()
 		{
-			TaskParams taskParams = new TaskParams();
+			TaskCalcParams taskParams = new TaskCalcParams();
 
 			taskParams.isOpenCLCheckBoxChecked = input.isOpenCLUsing();
 			taskParams.isCUDACheckBoxChecked = input.isCUDAUsing();
@@ -619,16 +619,16 @@ namespace VLP2D.ViewModel
 			switch (indexPrecision)
 			{
 				case 0:
-					pModel = new VLPRectangleModel<float>();
+					pModel = new Model<float>();
 					break;
 				case 1:
-					pModel = new VLPRectangleModel<double>();
+					pModel = new Model<double>();
 					break;
 				case 2:
-					pModel = new VLPRectangleModel<DD128>();
+					pModel = new Model<DD128>();
 					break;
 				case 3:
-					pModel = new VLPRectangleModel<QD256>();
+					pModel = new Model<QD256>();
 					break;
 			}
 
@@ -637,7 +637,7 @@ namespace VLP2D.ViewModel
 			pModel?.addCompletedHandler(completedEventHandler);
 		}
 
-		public int getModelMaxIterations(PlatformAndSchemeIndex platformScheme, VLPRectangleParams pParams, InterpolationEnumVLPRectangle idxInterpolation)
+		public int getModelMaxIterations(PlatformAndSchemeIndex platformScheme, TaskInputParams pParams, InterpolationEnum idxInterpolation)
 		{
 			if (input.methodIsDirectOrFixedIterations()) return 1;
 			return pModel.getMaxIterations(platformScheme, pParams, idxInterpolation);
@@ -648,23 +648,23 @@ namespace VLP2D.ViewModel
 			pModel.setMaxIterations(iters);
 		}
 
-		public void compileModelFunctions(VLPRectangleParams pParams)
+		public void compileModelFunctions(TaskInputParams pParams)
 		{
 			pModel.compileFunctions(pParams);
 		}
 	}
 
-	public interface IVLPRectangleOutput
+	public interface IOutputVM
 	{
 		void doPrepareCalculation();
 		void setModelMethodsParams();
 		void changeModelMultiThread(bool isMultiThread);
 		void changeModelVisualParams(bool visualize, int stepHeatMap);
 		void changeModelPrecision(int indexPrecision);
-		int getModelMaxIterations(PlatformAndSchemeIndex platformScheme, VLPRectangleParams pParams, InterpolationEnumVLPRectangle idxInterpolation);
+		int getModelMaxIterations(PlatformAndSchemeIndex platformScheme, TaskInputParams pParams, InterpolationEnum idxInterpolation);
 		void setModelIterations(int iters);
-		void compileModelFunctions(VLPRectangleParams pParams);
+		void compileModelFunctions(TaskInputParams pParams);
 		void allIterations();
-		void setInput(IVLPRectangleInput inValue);
+		void setInput(IInputVM inValue);
 	}
 }

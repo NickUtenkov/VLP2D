@@ -9,8 +9,8 @@ namespace VLP2D.View
 		{
 			InitializeComponent();
 			{
-				IVLPRectangleInput iVM = (IVLPRectangleInput)InputView.DataContext;
-				IVLPRectangleOutput oVM = (IVLPRectangleOutput)OutputView.DataContext;
+				IInputVM iVM = (IInputVM)InputView.DataContext;
+				IOutputVM oVM = (IOutputVM)OutputView.DataContext;
 				iVM.setOutput(oVM);
 				oVM.setInput(iVM);
 

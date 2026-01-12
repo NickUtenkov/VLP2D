@@ -92,7 +92,7 @@ namespace VLP2D.Model
 		}
 	}
 
-	public enum InterpolationEnumVLPRectangle : int
+	public enum InterpolationEnum : int
 	{
 		Mean = 0,
 		ArithmeticMean = 1,
@@ -100,11 +100,11 @@ namespace VLP2D.Model
 		WeightLinear = 3,
 	}
 
-	interface IVLPRectangleModel
+	interface IModel
 	{
-		void prepareCalculation(VLPRectangleParams pParams, InterpolationEnumVLPRectangle idxInterpolation, PlatformAndSchemeIndex platformScheme, List<BitmapSource> lstBitmap0, List<BitmapSource> lstBitmapDiff, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Func<MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmapDiff, Action actionSurface);
-		RectangleDataDouble recalculateSteps(VLPRectangleParams pParams, PlatformAndSchemeIndex platformScheme, bool isVarSepProgonkaGPU, VarSepMethodsEnum varSepMethodCPU);
-		void compileFunctions(VLPRectangleParams pParams);
+		void prepareCalculation(TaskInputParams pParams, InterpolationEnum idxInterpolation, PlatformAndSchemeIndex platformScheme, List<BitmapSource> lstBitmap0, List<BitmapSource> lstBitmapDiff, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Func<MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmapDiff, Action actionSurface);
+		RectangleDataDouble recalculateSteps(TaskInputParams pParams, PlatformAndSchemeIndex platformScheme, bool isVarSepProgonkaGPU, VarSepMethodsEnum varSepMethodCPU);
+		void compileFunctions(TaskInputParams pParams);
 		void setMethodParams(MethodsParams mParams);
 		void changeMultiThread(bool isMulti);
 		void changeVisualParams(bool visualize, int stepHeatMap);
@@ -119,7 +119,7 @@ namespace VLP2D.Model
 		double getElapsedTime();
 		string getDeviation();
 		string getElapsedInfo();
-		int getMaxIterations(PlatformAndSchemeIndex platformScheme, VLPRectangleParams pParams, InterpolationEnumVLPRectangle idxInterpolation);
+		int getMaxIterations(PlatformAndSchemeIndex platformScheme, TaskInputParams pParams, InterpolationEnum idxInterpolation);
 		void addProgressHandler(progressDelegateLPRectangle handler);
 		void addProgressHeaderHandler(progressHeaderDelegateLPRectangle handler);
 		void addCompletedHandler(completedDelegateLPRectangle handler);

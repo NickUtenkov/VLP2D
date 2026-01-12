@@ -44,7 +44,7 @@
 		<TextBlock Text="{x:Static loc:Resources.strInterpol}" FontSize="15" HorizontalAlignment="Center"
 			Visibility="{Binding Path=showInterpolation, Converter={StaticResource BoolToVisibilityConverterKey}}"
 		/>
-		<ComboBox SelectedIndex="{Binding interpolationIndex,Converter={StaticResource EnumConverterKey},ConverterParameter={x:Type local2:InterpolationEnumVLPRectangle}}" Style="{StaticResource resComboStyleWidth245}" Margin="0,3,0,0"
+		<ComboBox SelectedIndex="{Binding interpolationIndex,Converter={StaticResource EnumConverterKey},ConverterParameter={x:Type local2:InterpolationEnum}}" Style="{StaticResource resComboStyleWidth245}" Margin="0,3,0,0"
 			ItemTemplate="{StaticResource interpolItemTemplate}"
 			ItemsSource="{Binding listInterpolations, UpdateSourceTrigger=PropertyChanged}"
 			Visibility="{Binding Path=showInterpolation, Converter={StaticResource BoolToVisibilityConverterKey}}"

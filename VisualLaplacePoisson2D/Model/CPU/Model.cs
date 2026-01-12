@@ -29,14 +29,13 @@ namespace VLP2D.Model
 		public int cudaDevice;
 	}
 
-	class VLPRectangleModel<T> : IVLPRectangleModel where T :
+	class Model<T> : IModel where T :
 		unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>,
 		IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 	{
 		int elapsedIters, maxIters = -7;
 		IterationsKind iterationsKind;
 		T eps;
-		//above is the same(except name) as VLPRectangleParams(but not using them in order not use pointer to get values)
 		T fMinDiff = T.MaxValue, fMaxDiff = T.MinValue;
 		double initTime, elapsedTime;
 		string strElapsedInfo;
@@ -56,7 +55,7 @@ namespace VLP2D.Model
 		bool visualize;
 		int stepHeatMap;
 		PlatformAndSchemeIndex platformScheme;
-		InterpolationEnumVLPRectangle indexInterpolation;
+		InterpolationEnum indexInterpolation;
 		MethodsParams methodParams;
 		RectangleData<T> rectData = new RectangleData<T>();
 
@@ -64,11 +63,11 @@ namespace VLP2D.Model
 		Func<T, T> pFuncLeft, pFuncRight, pFuncTop, pFuncBottom;//for skip internal null check in CompiledFunctions
 		Func<T, T, T> pFuncKsi, pFuncBoundary, pFuncAnalytic;//for skip internal null check in CompiledFunctions
 
-		public VLPRectangleModel()
+		public Model()
 		{
 		}
 
-		public RectangleDataDouble recalculateSteps(VLPRectangleParams pParams, PlatformAndSchemeIndex platformScheme, bool isVarSepProgonkaGPU, VarSepMethodsEnum varSepMethodCPU)
+		public RectangleDataDouble recalculateSteps(TaskInputParams pParams, PlatformAndSchemeIndex platformScheme, bool isVarSepProgonkaGPU, VarSepMethodsEnum varSepMethodCPU)
 		{
 			rectData.recalculateSteps(pParams.xMin, pParams.xMax, pParams.cXSegments, pParams.yMin, pParams.yMax, pParams.cYSegments, platformScheme, isVarSepProgonkaGPU, varSepMethodCPU);
 
@@ -90,7 +89,7 @@ namespace VLP2D.Model
 			maxIters = maxIterations;
 		}
 
-		public void compileFunctions(VLPRectangleParams pParams)
+		public void compileFunctions(TaskInputParams pParams)
 		{
 			compiledFuncs = new CompiledFunctions<T>(pParams.funcLeft, pParams.funcRight, pParams.funcTop, pParams.funcBottom, pParams.fKsi, pParams.funcBoundary, pParams.funcAnalytic, true);
 			pFuncLeft = compiledFuncs.pFuncLeft;
@@ -102,7 +101,7 @@ namespace VLP2D.Model
 			pFuncAnalytic = compiledFuncs.pFuncAnalytic;
 		}
 
-		public void prepareCalculation(VLPRectangleParams pParams, InterpolationEnumVLPRectangle idxInterpolation, PlatformAndSchemeIndex platformScheme, List<BitmapSource> lstBitmap, List<BitmapSource> lstBitmapDiff, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Func<MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmapDiff, Action actionSurface)
+		public void prepareCalculation(TaskInputParams pParams, InterpolationEnum idxInterpolation, PlatformAndSchemeIndex platformScheme, List<BitmapSource> lstBitmap, List<BitmapSource> lstBitmapDiff, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap, Func<MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmapDiff, Action actionSurface)
 		{
 			this.platformScheme = platformScheme;
 			indexInterpolation = idxInterpolation;
@@ -146,7 +145,7 @@ namespace VLP2D.Model
 			methodParams = mParams;
 		}
 
-		public int getMaxIterations(PlatformAndSchemeIndex platformScheme, VLPRectangleParams pParams, InterpolationEnumVLPRectangle idxInterpolation)
+		public int getMaxIterations(PlatformAndSchemeIndex platformScheme, TaskInputParams pParams, InterpolationEnum idxInterpolation)
 		{
 			int rc = 0;
 			if (platformScheme.platrofm == PlatformEnum.CPU)
@@ -192,7 +191,7 @@ namespace VLP2D.Model
 			return 5000;
 		}
 
-		double[,] createInitialBitmap(VLPRectangleParams pParams, InterpolationEnumVLPRectangle idxInterpolation,ref float newStepX, ref float newStepY)
+		double[,] createInitialBitmap(TaskInputParams pParams, InterpolationEnum idxInterpolation,ref float newStepX, ref float newStepY)
 		{
 			CompiledFunctions<double> compiledFuncsFloat = new CompiledFunctions<double>(pParams.funcLeft, pParams.funcRight, pParams.funcTop, pParams.funcBottom, null, pParams.funcBoundary, null);
 			Func<double, double> pFuncLeftFloat, pFuncRightFloat, pFuncTopFloat, pFuncBottomFloat;
@@ -217,10 +216,10 @@ namespace VLP2D.Model
 			UtilsBorders.initTopBottomBorders<double>(uu, xMin, yMin, newStepX, newStepY, pFuncBottomFloat, pFuncTopFloat, pFuncBoundaryFloat, ref bMin, ref bMax);
 			UtilsBorders.initLeftRightBorders<double>(uu, xMin, yMin, newStepX, newStepY, pFuncLeftFloat, pFuncRightFloat, pFuncBoundaryFloat, ref bMin, ref bMax);
 
-			if (idxInterpolation == InterpolationEnumVLPRectangle.Mean) UtilsII.initInitialIterationMean<double>(uu, (bMin + bMax) / 2.0f);
-			else if (idxInterpolation == InterpolationEnumVLPRectangle.ArithmeticMean) UtilsII.initInitialIterationArithmeticMean(uu);
-			else if (idxInterpolation == InterpolationEnumVLPRectangle.Linear) UtilsII.initInitialIterationLinearInterpolation(uu);
-			else if (idxInterpolation == InterpolationEnumVLPRectangle.WeightLinear) UtilsII.initInitialIterationWeightLinearInterpolation(uu);
+			if (idxInterpolation == InterpolationEnum.Mean) UtilsII.initInitialIterationMean<double>(uu, (bMin + bMax) / 2.0f);
+			else if (idxInterpolation == InterpolationEnum.ArithmeticMean) UtilsII.initInitialIterationArithmeticMean(uu);
+			else if (idxInterpolation == InterpolationEnum.Linear) UtilsII.initInitialIterationLinearInterpolation(uu);
+			else if (idxInterpolation == InterpolationEnum.WeightLinear) UtilsII.initInitialIterationWeightLinearInterpolation(uu);
 
 			BitmapSource bms = fCreateBitmap(false, new MinMaxF(bMin, bMax), new Adapter2D<float>(cXSegsBmp + 1, cYSegsBmp + 1, (i, j) => (float)uu[i, j]));
 			if (bms != null) lstBitmap.Add(bms);
@@ -457,7 +456,7 @@ namespace VLP2D.Model
 		void backgroundWorker_DoWork(object sender, DoWorkEventArgs e)
 		{
 			String strErr = allIterations_DoWork();
-			if (!string.IsNullOrEmpty(strErr)) MessageBox.Show(strErr, "VLPRectangle backgroundWorker_DoWork");
+			if (!string.IsNullOrEmpty(strErr)) MessageBox.Show(strErr, "backgroundWorker_DoWork");
 		}
 		void backgroundWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
 		{
@@ -537,10 +536,10 @@ namespace VLP2D.Model
 
 			if (isSchemeUseInitialInterpolation(platformScheme))
 			{
-				if (indexInterpolation == InterpolationEnumVLPRectangle.Mean) scheme.initInitialIterationMean((min + max) / T.CreateTruncating(2));
-				else if (indexInterpolation == InterpolationEnumVLPRectangle.ArithmeticMean) scheme.initInitialIterationArithmeticMean();
-				else if (indexInterpolation == InterpolationEnumVLPRectangle.Linear) scheme.initInitialIterationLinearInterpolation();
-				else if (indexInterpolation == InterpolationEnumVLPRectangle.WeightLinear) scheme.initInitialIterationWeightLinearInterpolation();
+				if (indexInterpolation == InterpolationEnum.Mean) scheme.initInitialIterationMean((min + max) / T.CreateTruncating(2));
+				else if (indexInterpolation == InterpolationEnum.ArithmeticMean) scheme.initInitialIterationArithmeticMean();
+				else if (indexInterpolation == InterpolationEnum.Linear) scheme.initInitialIterationLinearInterpolation();
+				else if (indexInterpolation == InterpolationEnum.WeightLinear) scheme.initInitialIterationWeightLinearInterpolation();
 			}
 
 			if (methodParams.isCompareAnalytic && pFuncAnalytic != null)

@@ -4,26 +4,26 @@ using VLP2D.Model;
 
 namespace VLP2D.ViewModel
 {
-	internal class TaskParams
+	internal class TaskCalcParams
 	{
 		public bool isOpenCLCheckBoxChecked, isCUDACheckBoxChecked, isJordan, isChebysh, isBiconjugateStabilized, isVarSepProgonka;
 		public int idxScheme, precision, paramL, idxInterpol, idxDeviceOCL, idxDeviceCUDA;
 		public VarSepMethodsEnum varSepMethod;
 		public CRMethodsEnum crMethod;
 
-		public TaskParams()
+		public TaskCalcParams()
 		{
 		}
 
-		public static TaskParams restore(string fileName)
+		public static TaskCalcParams restore(string fileName)
 		{
-			return UtilsJson.jsonDeserialize<TaskParams>(fullPath(fileName));
+			return UtilsJson.jsonDeserialize<TaskCalcParams>(fullPath(fileName));
 		}
 
 		public void save(string fileName)
 		{
 			Directory.CreateDirectory(iniDirectory());
-			UtilsJson.jsonSerialize<TaskParams>(this, fullPath(fileName));
+			UtilsJson.jsonSerialize<TaskCalcParams>(this, fullPath(fileName));
 		}
 
 		static string iniDirectory() => Path.Combine(Utils.getDataPath(), "Ini");

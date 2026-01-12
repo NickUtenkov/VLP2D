@@ -47,9 +47,9 @@ namespace VLP2D.ViewModel
 			addPrecisionKeys(keysOptionalCUDA);
 		}
 
-		public VLPRectangleParams parseFile(string filePath)
+		public TaskInputParams parseFile(string filePath)
 		{
-			VLPRectangleParams parsedParams = null;
+			TaskInputParams parsedParams = null;
 			List<string> strErrors = new List<string>();
 			Dictionary<string, string> dict = defaultDictionary();
 			readParameters(filePath, dict, setKeys);
@@ -113,7 +113,7 @@ namespace VLP2D.ViewModel
 				if (strErrors.Count == 0)
 				{
 					string name = Path.GetFileNameWithoutExtension(filePath);
-					parsedParams = new VLPRectangleParams(dict["xMin"], dict["yMin"], dict["xMax"], dict["yMax"], segmentsX, segmentsY, itersCPU, itersOCL, itersCUDA, dictEpsilon, RHS, fLeft, fRight, fTop, fBottom, funcBoundary, funcAnalytic, name);
+					parsedParams = new TaskInputParams(dict["xMin"], dict["yMin"], dict["xMax"], dict["yMax"], segmentsX, segmentsY, itersCPU, itersOCL, itersCUDA, dictEpsilon, RHS, fLeft, fRight, fTop, fBottom, funcBoundary, funcAnalytic, name);
 				}
 			}
 			if (strErrors.Count > 0)
