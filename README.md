@@ -190,6 +190,7 @@ pi(x) - число Пи умноженное на x(хотя можно испо
 Свои функции можно добавлять в Utils.addCustomFunctions(см. реализацию функции pi(x) и abs).
 
 Примеры для abs(x) и pi(x)(они уже добавлены в ELW)
+```
 ToolsHelper<T>.OperationsRegistry.addFunctionAfterRegistryInit("pi", ["pi"], 1, new CalculatorPi<T>());
 ToolsHelper<T>.OperationsRegistry.addFunctionAfterRegistryInit("abs", ["abs"], 1, new CalculatorAbs<T>());
 
@@ -208,7 +209,7 @@ internal sealed class CalculatorAbs<T> : IOperationCalculator<T> where T : INumb
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public Expression expression(Expression[] items, int idx) => Expression.Call(typeof(T).GetMethod(nameof(T.Abs)), items[idx + 0]);
 }
-
+```
 ## Сходимость альфы
 Для решения трёхдиагональных СЛАУ используется метод прогонки. Во всех методах, кроме маршевого, матрица системы задается одним числом(диагональ, d). Над и поддиагонали равны 1(или -1). В этих случаях имеет место сходимость коэффициента альфа при |d| > 2. В некоторых случаях альфа сходится уже на 11-м номере(для double), ~22(для DD128), ~42(для QD256).
 
