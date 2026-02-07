@@ -361,15 +361,16 @@ namespace VLP2D.Common
 
 		public static void addCustomFunctions<T>() where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 		{
-			ToolsHelper<T>.OperationsRegistry.addFunctionAfterRegistryInit("pi", ["pi"], 1, new CalculatorPi<T>());
+			//already added to ELW
+			//ToolsHelper<T>.OperationsRegistry.addFunctionAfterRegistryInit("pi", ["pi"], 1, new CalculatorPi<T>());
 		}
 	}
 
-	internal sealed class CalculatorPi<T> : IOperationCalculator<T> where T : INumber<T>, IFloatingPointConstants<T>
+	/*internal sealed class CalculatorPi<T> : IOperationCalculator<T> where T : INumber<T>, IFloatingPointConstants<T>
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public T calculate(Span<T> items, int idx) => T.Pi * (items[idx + 0]);
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public Expression expression(Expression[] items, int idx) => Expression.Multiply(Expression.Constant(T.Pi, typeof(T)), items[idx + 0]);
-	}
+	}*/
 }

@@ -1,5 +1,5 @@
-using VLP2D.ViewModel;
 using System.Windows.Controls;
+using VLP2D.ViewModel;
 
 namespace VLP2D.View
 {

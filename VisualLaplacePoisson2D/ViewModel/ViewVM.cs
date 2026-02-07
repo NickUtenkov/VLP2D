@@ -1,4 +1,7 @@
-﻿using System.Windows.Input;
+﻿using System;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Input;
 
 namespace VLP2D.ViewModel
 {
@@ -24,7 +27,20 @@ namespace VLP2D.ViewModel
 
 		void toggleWidth()
 		{
-			inputWidth = (inputWidth == 0) ? initialWidth : 0;
+			int divider = 20, count = initialWidth / divider;
+			int milliSecs = 600;
+			int delay = milliSecs / count;
+			Action<int> action;
+			if (inputWidth == 0) action = (i) => inputWidth = divider * i;
+			else action = (i) => inputWidth = divider * (count - i);
+			Task.Run(() =>
+			{
+				for (int i = 0; i <= count; i++)
+				{
+					Application.Current.Dispatcher.Invoke(delegate { action(i); });
+					Task.Delay(delay).Wait();
+				}
+			});
 		}
 	}
 }

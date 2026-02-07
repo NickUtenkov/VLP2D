@@ -1,10 +1,7 @@
-﻿using ELW.Library.Math;
-using System;
-using System.Diagnostics;
+﻿using System;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Threading;
-using VLP2D.Model;
 
 namespace VLP2D
 {

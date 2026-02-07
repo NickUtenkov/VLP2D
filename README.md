@@ -184,9 +184,30 @@ exp - экспонента\
 log(x,y) - логарифм x по основанию y\
 ln - логарифм натуральный\
 lg - логарифм десятичный\
+abs - модуль\
 pi(x) - число Пи умноженное на x(хотя можно использовать $2*asin(1)*x$ )
 
-Свои функции можно добавлять в Utils.addCustomFunctions(см. реализацию функции pi(x)).
+Свои функции можно добавлять в Utils.addCustomFunctions(см. реализацию функции pi(x) и abs).
+
+Примеры для abs(x) и pi(x)(они уже добавлены в ELW)
+ToolsHelper<T>.OperationsRegistry.addFunctionAfterRegistryInit("pi", ["pi"], 1, new CalculatorPi<T>());
+ToolsHelper<T>.OperationsRegistry.addFunctionAfterRegistryInit("abs", ["abs"], 1, new CalculatorAbs<T>());
+
+internal sealed class CalculatorPi<T> : IOperationCalculator<T> where T : INumber<T>, IFloatingPointConstants<T>
+{
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public T calculate(Span<T> items, int idx) => T.Pi * (items[idx + 0]);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Expression expression(Expression[] items, int idx) => Expression.Multiply(Expression.Constant(T.Pi, typeof(T)), items[idx + 0]);
+}
+
+internal sealed class CalculatorAbs<T> : IOperationCalculator<T> where T : INumber<T>, IFloatingPointConstants<T>
+{
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public T calculate(Span<T> items, int idx) => T.Abs(items[idx + 0]);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public Expression expression(Expression[] items, int idx) => Expression.Call(typeof(T).GetMethod(nameof(T.Abs)), items[idx + 0]);
+}
 
 ## Сходимость альфы
 Для решения трёхдиагональных СЛАУ используется метод прогонки. Во всех методах, кроме маршевого, матрица системы задается одним числом(диагональ, d). Над и поддиагонали равны 1(или -1). В этих случаях имеет место сходимость коэффициента альфа при |d| > 2. В некоторых случаях альфа сходится уже на 11-м номере(для double), ~22(для DD128), ~42(для QD256).
@@ -210,7 +231,7 @@ OpenCL - OpenCL.dll(обычно находится в C:\Windows\SysWOW64 и/и
 CUDA - названия файлов в SDK 12.5 cufft64_11.dll, nvrtc-builtins64_125.dll, nvrtc64_120_0.dll, находятся в C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5\bin, версия SDK может быть другой.
 
 ## Ссылки(в исходных текстах программы) на книги и статьи
-[SNR] Samarskii-Nikolaev russian - А. А. САМАРСКИЙ, Е. С. НИКОЛАЕВ Методы решения сеточных уравнений.\
+[SNR] Samarskii-Nikolaev russian - А. А. Самарский, Е. С. Николаев Методы решения сеточных уравнений.\
 [SNE] Samarskii-Nikolaev english - Aleksandr A. Samarskii Evgenii S. Nikolaev Numerical Methods for Grid Equations Volume I Direct Methods.\
 [S_VVCM] Самарский А. А. Введение в численные методы.\
 [IL] Ильин В.П., Кузнецов Ю.И. Трехдиагональные матрицы и их приложения.
