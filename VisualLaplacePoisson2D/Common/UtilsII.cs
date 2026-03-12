@@ -5,14 +5,14 @@ namespace VLP2D.Common
 {
 	internal class UtilsII
 	{
-		public static void initInitialIterationMean<T>(T[,] unDst, T val)
+		public static void initInitialIterationValue<T>(T[,] unDst, T val)
 		{
 			int upper1 = unDst.GetUpperBound(0);
 			int upper2 = unDst.GetUpperBound(1);
 			GridIterator.iterate(upper1, upper2, (i, j) => unDst[i, j] = val);
 		}
 
-		public static void initInitialIterationMean<T>(T[] unDst, int dim1, int dim2, T val)
+		public static void initInitialIterationValue<T>(T[] unDst, int dim1, int dim2, T val)
 		{
 			if (unDst == null) return;
 			GridIterator.iterate(dim1 - 1, dim2 - 1, (i, j) => unDst[i * dim2 + j] = val);

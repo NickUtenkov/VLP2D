@@ -146,7 +146,7 @@ namespace VLP2D.Model
 			UtilsDiff.calculateDifference(adapter, unDiff, xMin, yMin, stepX, stepY, funcAnalitic, ref valMin, ref valMax, canceled, reportProgress);
 		}
 
-		public void initInitialIterationMean(T val) { }
+		public void initInitialIterationValue(T val) { }
 		public void initInitialIterationArithmeticMean() { }
 		public void initInitialIterationLinearInterpolation() { }
 		public void initInitialIterationWeightLinearInterpolation() { }

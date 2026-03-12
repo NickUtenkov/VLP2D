@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using VLP2D.Common;
+using VLP2D.Model.CPU;
 using VLP2D.Properties;
 using static VLP2D.Common.Utils;
 using static VLP2D.Common.UtilsPict;
@@ -216,10 +217,11 @@ namespace VLP2D.Model
 			UtilsBorders.initTopBottomBorders<double>(uu, xMin, yMin, newStepX, newStepY, pFuncBottomFloat, pFuncTopFloat, pFuncBoundaryFloat, ref bMin, ref bMax);
 			UtilsBorders.initLeftRightBorders<double>(uu, xMin, yMin, newStepX, newStepY, pFuncLeftFloat, pFuncRightFloat, pFuncBoundaryFloat, ref bMin, ref bMax);
 
-			if (idxInterpolation == InterpolationEnum.Mean) UtilsII.initInitialIterationMean<double>(uu, (bMin + bMax) / 2.0f);
+			if (idxInterpolation == InterpolationEnum.Mean) UtilsII.initInitialIterationValue<double>(uu, (bMin + bMax) / 2.0f);
 			else if (idxInterpolation == InterpolationEnum.ArithmeticMean) UtilsII.initInitialIterationArithmeticMean(uu);
 			else if (idxInterpolation == InterpolationEnum.Linear) UtilsII.initInitialIterationLinearInterpolation(uu);
 			else if (idxInterpolation == InterpolationEnum.WeightLinear) UtilsII.initInitialIterationWeightLinearInterpolation(uu);
+			else if (idxInterpolation == InterpolationEnum.Zero) UtilsII.initInitialIterationValue<double>(uu, 0);
 
 			BitmapSource bms = fCreateBitmap(false, new MinMaxF(bMin, bMax), new Adapter2D<float>(cXSegsBmp + 1, cYSegsBmp + 1, (i, j) => (float)uu[i, j]));
 			if (bms != null) lstBitmap.Add(bms);
@@ -284,6 +286,11 @@ namespace VLP2D.Model
 					else if (idxScheme == SchemeCPUEnum.MultiGrid)
 					{
 						scheme = new MultiGridScheme<T>(rectData, pFuncKsi, eps);
+					}
+					else if (idxScheme == SchemeCPUEnum.EvolutionalFactorization)
+					{
+						scheme = new EvolutionalFactorizationScheme<T>(rectData, eps, pFuncKsi);
+						maxIters = scheme.maxIterations();
 					}
 					else if (idxScheme == SchemeCPUEnum.CompleteReduction)
 					{
@@ -536,10 +543,11 @@ namespace VLP2D.Model
 
 			if (isSchemeUseInitialInterpolation(platformScheme))
 			{
-				if (indexInterpolation == InterpolationEnum.Mean) scheme.initInitialIterationMean((min + max) / T.CreateTruncating(2));
+				if (indexInterpolation == InterpolationEnum.Mean) scheme.initInitialIterationValue((min + max) / T.CreateTruncating(2));
 				else if (indexInterpolation == InterpolationEnum.ArithmeticMean) scheme.initInitialIterationArithmeticMean();
 				else if (indexInterpolation == InterpolationEnum.Linear) scheme.initInitialIterationLinearInterpolation();
 				else if (indexInterpolation == InterpolationEnum.WeightLinear) scheme.initInitialIterationWeightLinearInterpolation();
+				else if (indexInterpolation == InterpolationEnum.Zero) scheme.initInitialIterationValue(T.Zero);
 			}
 
 			if (methodParams.isCompareAnalytic && pFuncAnalytic != null)

@@ -306,6 +306,17 @@ namespace VLP2D.Properties {
         }
 
 		/// <summary>
+		///   Ищет локализованную строку, похожую на эволюционной факторизации.
+		/// </summary>
+		public static string strEvolutionalFactorization
+		{
+			get
+			{
+				return ResourceManager.GetString("strEvolutionalFactorization", resourceCulture);
+			}
+		}
+
+		/// <summary>
 		///   Ищет локализованную строку, похожую на Маршевый скалярный.
 		/// </summary>
 		public static string strMarchingScalar
@@ -448,11 +459,22 @@ namespace VLP2D.Properties {
                 return ResourceManager.GetString("strPiecewiseWeight", resourceCulture);
             }
         }
-        
-        /// <summary>
-        ///   Ищет локализованную строку, похожую на Прогонка.
-        /// </summary>
-        public static string strProgonka {
+
+		/// <summary>
+		///   Ищет локализованную строку, похожую на Нулевая.
+		/// </summary>
+		public static string strIterationZeroInited
+		{
+			get
+			{
+				return ResourceManager.GetString("strIterationZeroInited", resourceCulture);
+			}
+		}
+
+		/// <summary>
+		///   Ищет локализованную строку, похожую на Прогонка.
+		/// </summary>
+		public static string strProgonka {
             get {
                 return ResourceManager.GetString("strProgonka", resourceCulture);
             }

@@ -147,7 +147,7 @@ namespace VLP2D.Model
 			});
 		}
 
-		public void initInitialIterationMean(T val) { }
+		public void initInitialIterationValue(T val) { }
 		public void initInitialIterationArithmeticMean() { }
 		public void initInitialIterationLinearInterpolation() { }
 		public void initInitialIterationWeightLinearInterpolation() { }

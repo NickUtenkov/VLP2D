@@ -245,10 +245,14 @@ namespace VLP2D.ViewModel
 				if (val != null)
 				{
 					rc = val.Split(',').Select(int.Parse).ToArray();
-					if (rc != null && rc.Length < 4)
+					if (rc != null && rc.Length < 5)
 					{
-						string strErr = string.Format(Resources.strParsingParameterError, paramName, dict.GetValueOrDefault(paramName));
-						strErrors.Add(strErr + "\n\n" + Resources.strFour);
+						//string strErr = string.Format(Resources.strParsingParameterError, paramName, dict.GetValueOrDefault(paramName));
+						//strErrors.Add(strErr + "\n\n" + Resources.strFour);
+						int toAdd = 5 - rc.Length;
+						List<int> lst = rc.ToList();
+						for (int i = 1; i <= toAdd; i++) lst.Add(5000);
+						rc = lst.ToArray();
 					}
 				}
 			}
@@ -270,7 +274,7 @@ namespace VLP2D.ViewModel
 					if (itersVal != null) dictIters.Add(enumName, itersVal);
 				}
 #if AllowAbscentIterations
-				else dictIters.Add(enumName, [5000, 5000, 5000, 5000]);
+				else dictIters.Add(enumName, [5000, 5000, 5000, 5000, 5000]);
 #endif
 				foreach (string keyPrecision in keysTypeNames)
 				{
@@ -281,7 +285,7 @@ namespace VLP2D.ViewModel
 						if (itersVal != null) dictIters.Add(keyIter, itersVal);
 					}
 #if AllowAbscentIterations
-					else dictIters.Add(keyIter, [5000, 5000, 5000, 5000]);
+					else dictIters.Add(keyIter, [5000, 5000, 5000, 5000, 5000]);
 #endif
 				}
 			}

@@ -18,7 +18,7 @@ namespace VLP2D.Model
 		T _05 = T.CreateTruncating(0.5);
 		T _2 = T.CreateTruncating(2);
 		T _4 = T.CreateTruncating(4);
-		const int countSmoothingIterations = 3;//if 1 then no convergence in rectangle cases, if 2 then precision is less 10^3 times
+		const int countSmoothingIterations = 3;//if 1 then no convergence in rectangle cases, if 2 then precision is 1000 times less
 
 		public MultiGridScheme(RectangleData<T> rectData, Func<T, T, T> fKsi, T eps) :
 			base(rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY)

@@ -24,11 +24,12 @@ namespace VLP2D.Model
 		BiconjugateGradient,
 		Chebishev3Layers,
 		MultiGrid,
+		EvolutionalFactorization,
 		CompleteReduction,
 		VariablesSeparation,
 		IncompleteReduction,
 		MatrixProgonka,
-		Marching,
+		Marching
 	}
 
 	public enum SchemeOCLEnum : int
@@ -94,10 +95,11 @@ namespace VLP2D.Model
 
 	public enum InterpolationEnum : int
 	{
-		Mean = 0,
-		ArithmeticMean = 1,
-		Linear = 2,
-		WeightLinear = 3,
+		Zero = 0,
+		Mean,
+		ArithmeticMean,
+		Linear,
+		WeightLinear,
 	}
 
 	interface IModel

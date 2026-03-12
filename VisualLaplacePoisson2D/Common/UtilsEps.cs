@@ -1,6 +1,7 @@
 ﻿using DD128Numeric;
 using QD256Numeric;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace VLP2D.Common
 {
@@ -29,6 +30,18 @@ namespace VLP2D.Common
 			if (typeof(T) == typeof(QD256)) return 1.21543267145725e-63;
 
 			return 2.2204460492503131E-16;
+		}
+
+		public static T epsilonBackground<T>() where T : INumber<T>, IPowerFunctions<T>
+		{//same as above
+			T digits10 = T.Zero;
+			int sizeOfType = Marshal.SizeOf(typeof(T));
+			if (sizeOfType == 4) digits10 = T.CreateTruncating(-7);
+			else if (sizeOfType == 8) digits10 = T.CreateTruncating(-16.2);
+			else if (sizeOfType == 16) digits10 = T.CreateTruncating(-31);
+			else if (sizeOfType == 32) digits10 = T.CreateTruncating(-62);
+
+			return T.Pow(T.CreateTruncating(10), digits10);
 		}
 	}
 }

@@ -315,4 +315,10 @@
   <data name="strStepViz" xml:space="preserve">
     <value>Step</value>
   </data>
+  <data name="strEvolutionalFactorization" xml:space="preserve">
+    <value>Evolutional factorization</value>
+  </data>
+  <data name="strIterationZeroInited" xml:space="preserve">
+    <value>Zero</value>
+  </data>
 </root>

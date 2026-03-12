@@ -315,4 +315,10 @@
   <data name="strStepViz" xml:space="preserve">
     <value>Шаг</value>
   </data>
+  <data name="strEvolutionalFactorization" xml:space="preserve">
+    <value>Эволюционной факторизации</value>
+  </data>
+  <data name="strIterationZeroInited" xml:space="preserve">
+    <value>Нулевая</value>
+  </data>
 </root>

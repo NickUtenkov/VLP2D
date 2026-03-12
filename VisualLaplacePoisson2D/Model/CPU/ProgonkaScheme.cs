@@ -16,7 +16,7 @@ namespace VLP2D.Model
 		protected int cXSegments, cYSegments;
 		protected Func<T[,], int, int, int, T> rhsX, rhsY;//Right Hand Sides
 		protected Func<int, int, T> funcX, funcY;
-		protected T[,] srcX, dstX, srcY, dstY;//source & destination array
+		protected T[,] srcX, dstY;//source & destination array
 		protected bool bProgonkaFixedIters;
 		protected Action<int> calculateIterationAlpha = null;
 		protected AlfaСonvergentUpperBoundEpsilon αCC = new AlfaСonvergentUpperBoundEpsilon(UtilsEps.epsilon<T>());
@@ -46,8 +46,6 @@ namespace VLP2D.Model
 
 			calculateOptimalTimeStep(stepX, stepY);
 			setSrcDst();
-			dstX = unm;
-			srcY = unm;
 		}
 
 		void calculateOptimalTimeStep(T stepX, T stepY)
@@ -61,7 +59,7 @@ namespace VLP2D.Model
 		{
 			kX = αCC.upperBound(bx, cXSegments - 1);
 			alphaX[0] = T.Zero;
-			for (int i = 1; i <= kX; i++) alphaX[i] = T.One / (bx - alphaX[i - 1]);
+			for (int i = 1; i <= kX; i++) alphaX[i] = T.One / (bx - alphaX[i - 1]);//[SNR] p.443, top
 
 			kY = αCC.upperBound(by, cYSegments - 1);
 			alphaY[0] = T.Zero;
@@ -72,8 +70,8 @@ namespace VLP2D.Model
 		{
 			calculateIterationAlpha?.Invoke(iter);
 
-			Parallel.For(1, cYSegments, GridIterator.optionsParallel, j => progonkaX(srcX, dstX, j, iter));
-			Parallel.For(1, cXSegments, GridIterator.optionsParallel, i => progonkaY(srcY, dstY, i, iter));
+			Parallel.For(1, cYSegments, GridIterator.optionsParallel, j => progonkaX(srcX, unm, j, iter));
+			Parallel.For(1, cXSegments, GridIterator.optionsParallel, i => progonkaY(unm, dstY, i, iter));
 
 			T rc;
 			if (bProgonkaFixedIters) rc = T.One;
@@ -126,7 +124,7 @@ namespace VLP2D.Model
 			return u[i, j - 1] + u[i, j + 1] - u[i, j] * _2;
 		}
 
-		void progonkaX(T[,] src, T[,] dst, int j, int iter)//original name progonx
+		void progonkaX(T[,] src, T[,] dst, int j, int iter)
 		{
 			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			int ind(int idx) => (idx < kX) ? idx : kX;

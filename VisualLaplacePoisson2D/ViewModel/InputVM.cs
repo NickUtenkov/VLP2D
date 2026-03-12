@@ -15,11 +15,11 @@ namespace VLP2D.ViewModel
 	{
 		IOutputVM output = null;
 		public List<TaskInputParams> listParams { get; } = new List<TaskInputParams>();
-		public List<String> listInterpolations { get; } = new List<string> { Resources.strMean, Resources.strArithMean, Resources.strPiecewise, Resources.strPiecewiseWeight };
+		public List<String> listInterpolations { get; } = new List<string> { Resources.strIterationZeroInited, Resources.strMean, Resources.strArithMean, Resources.strPiecewise, Resources.strPiecewiseWeight };
 
 		public List<String> listCPUSchemes { get; } = new List<string> { Resources.strSimpleIteration, Resources.strSlidingIteration, Resources.strSOR, Resources.strSplitting,
 			Resources.strVarDir, Resources.strPTM, Resources.strGradDesc, Resources.strMinRes, Resources.strConjGrad, Resources.strBiconjGrad, Resources.strChebish3,
-			Resources.strMultiGridVC, Resources.strCR, Resources.strFA, Resources.strFACR, Resources.strMatrProgonka, Resources.strMarchingVector,};
+			Resources.strMultiGridVC, Resources.strEvolutionalFactorization, Resources.strCR, Resources.strFA, Resources.strFACR, Resources.strMatrProgonka, Resources.strMarchingVector};
 
 		public List<String> listOCLSchemes { get; } = new List<string> { Resources.strSimpleIteration, Resources.strSlidingIteration, Resources.strSOR, Resources.strSplitting,
 			Resources.strVarDir, Resources.strMultiGridVC, Resources.strCR, Resources.strFA, Resources.strFACR, Resources.strMarchingVector};
@@ -279,7 +279,7 @@ namespace VLP2D.ViewModel
 					schemeCPUIndex == SchemeCPUEnum.MatrixProgonka ||
 					schemeCPUIndex == SchemeCPUEnum.Marching ||
 					boundaryNull());
-				if (!showInterpolation) interpolationIndex = InterpolationEnum.Mean;
+				if (!showInterpolation) interpolationIndex = InterpolationEnum.Zero;
 				showLParamSlider = !isOpenCLComboBoxVisible && schemeCPUIndex == SchemeCPUEnum.Marching || schemeCPUIndex == SchemeCPUEnum.IncompleteReduction;
 				if (showLParamSlider && (schemeCPUIndex == SchemeCPUEnum.Marching)) resetMarchingLParam();
 				if (showLParamSlider && (schemeCPUIndex == SchemeCPUEnum.IncompleteReduction)) resetFACRLParam(true);
@@ -300,7 +300,7 @@ namespace VLP2D.ViewModel
 					schemeOCLIndex == SchemeOCLEnum.IncompleteReductionOCL ||
 					schemeOCLIndex == SchemeOCLEnum.MarchingOCL ||
 					boundaryNull());
-				if (!showInterpolation) interpolationIndex = InterpolationEnum.Mean;
+				if (!showInterpolation) interpolationIndex = InterpolationEnum.Zero;
 				showLParamSlider = (schemeOCLIndex == SchemeOCLEnum.IncompleteReductionOCL) || (schemeOCLIndex == SchemeOCLEnum.MarchingOCL);
 				if (showLParamSlider && (schemeOCLIndex == SchemeOCLEnum.IncompleteReductionOCL)) resetFACRLParam(false);
 				if (showLParamSlider && (schemeOCLIndex == SchemeOCLEnum.MarchingOCL)) resetMarchingLParam();
@@ -321,7 +321,7 @@ namespace VLP2D.ViewModel
 					schemeCUDAIndex == SchemeCUDAEnum.FACRCUDA ||
 					schemeCUDAIndex == SchemeCUDAEnum.MarchingCUDA ||
 					boundaryNull());
-				if (!showInterpolation) interpolationIndex = InterpolationEnum.Mean;
+				if (!showInterpolation) interpolationIndex = InterpolationEnum.Zero;
 				showLParamSlider = (schemeCUDAIndex == SchemeCUDAEnum.FACRCUDA) || (schemeCUDAIndex == SchemeCUDAEnum.MarchingCUDA);
 				if (showLParamSlider && (schemeCUDAIndex == SchemeCUDAEnum.FACRCUDA)) resetFACRLParam(false);
 				if (showLParamSlider && (schemeCUDAIndex == SchemeCUDAEnum.MarchingCUDA)) resetMarchingLParam();
@@ -834,7 +834,7 @@ namespace VLP2D.ViewModel
 			return deviceCUDASelectedIndex;
 		}
 
-		int _precisionSelectedIndex = 2;
+		int _precisionSelectedIndex = 1;
 		public int precisionSelectedIndex
 		{
 			get { return _precisionSelectedIndex; }
@@ -1017,6 +1017,7 @@ namespace VLP2D.ViewModel
 			if (schemeCPUIndex == SchemeCPUEnum.BiconjugateGradient) return true;
 			if (schemeCPUIndex == SchemeCPUEnum.Chebishev3Layers) return true;
 			if (schemeCPUIndex == SchemeCPUEnum.MultiGrid) return true;
+			if (schemeCPUIndex == SchemeCPUEnum.EvolutionalFactorization) return true;
 
 			return false;
 		}

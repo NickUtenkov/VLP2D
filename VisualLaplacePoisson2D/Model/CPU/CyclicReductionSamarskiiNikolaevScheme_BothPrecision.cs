@@ -16,14 +16,14 @@ namespace VLP2D.Model
 		T[][] ac,vv;//accumulator
 		T[][] p;
 		T stepX2, stepY2, derivativeCoeff;
-		Func<T[][], int, int, T> operatorB;
+		Func<T[], int, T> operatorB;
 		bool morePrecision;
 		Coeffs coeffs;
 		T _1 = T.One;
 		T _2 = T.CreateTruncating(2.0);
+		T _4 = T.CreateTruncating(4.0);
+		T _5 = T.CreateTruncating(5.0);
 		T _12 =T.CreateTruncating(12.0);
-		T _16 = T.CreateTruncating(16.0);
-		T _30 = T.CreateTruncating(30.0);
 
 		public CyclicReductionSamarskiiNikolaevScheme_BothPrecision(RectangleData<T> rectData, bool morePrecision, Func<T, T, T> fKsi, List<BitmapSource> lstBitmap0, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap0, Action<double> reportProgressIn) :
 			base(rectData, fKsi, lstBitmap0, fCreateBitmap0, reportProgressIn)
@@ -94,7 +94,7 @@ namespace VLP2D.Model
 						{
 							DiagElemCoefBCoefAlfa data = coeffs.getCoeffs(l, k);
 							calcAlpha(data.diagElem, alfa[core]);
-							progonka((i) => data.coefAlfa * (operatorB(p, j - m, i) + operatorB(p, j + m, i)), data.coefB, alfa[core], vv[core]);//[SNR] p.148, replacement p.138 (21-22)
+							progonka((i) => data.coefAlfa * (operatorB(p[j - m], i) + operatorB(p[j + m], i)), data.coefB, alfa[core], vv[core]);//[SNR] p.148, replacement p.138 (21-22)
 							for (int i = 1; i < N2; i++) p[j][i] += vv[core][i];//[SNR] p.138, (23)(also see below)
 						}
 						for (int i = 1; i < N2; i++) p[j][i] *= _05;//[SNR] p.138, (23)
@@ -125,7 +125,7 @@ namespace VLP2D.Model
 						{
 							DiagElemCoefBCoefAlfa data = coeffs.getCoeffs(l, k);
 							calcAlpha(data.diagElem, alfa[core]);
-							progonka((i) => p[j][i] + data.coefAlfa * (operatorB(un, j - m, i) + operatorB(un, j + m, i)), data.coefB, alfa[core], vv[core]);//[SNR] p.148, replacement for (24) & p.138 (25)
+							progonka((i) => p[j][i] + data.coefAlfa * (operatorB(un[j - m], i) + operatorB(un[j + m], i)), data.coefB, alfa[core], vv[core]);//[SNR] p.148, replacement for (24) & p.138 (25)
 							for (int i = 1; i < N2; i++) ac[core][i] += vv[core][i];//[SNR] p.138, (26)(also see below)
 						}
 						for (int i = 1; i < N2; i++) un[j][i] = ac[core][i];//[SNR] p.138, (26)
@@ -175,29 +175,28 @@ namespace VLP2D.Model
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		T operatorBMorePrecision(T[][] y,int j0,int i0)
+		T operatorBMorePrecision(T[] y,int i0)
 		{//j - vector number,i - its coordinates
-			return y[j0][i0] + derivativeCoeff * operatorDerivativeSecondY(y, j0, i0);//[SNR] p.147 between (6) & (7)
+			return y[i0] + derivativeCoeff * operatorDerivativeSecondY(y, i0);//[SNR] p.147 between (6) & (7)
 
 			//[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			T operatorDerivativeSecondY(T[][] u, int j, int i)
+			T operatorDerivativeSecondY(T[] u, int i)
 			{//j - vector number,i - its coordinates
-#if !Oh4
-				if (i == 1) return (T.Zero - _2 * u[j][i] + u[j][i + 1]) / stepY2;//assume u[j][0] == 0
-				if (i == N2 - 1) return (u[j][i - 1] - _2 * u[j][i] + T.Zero) / stepY2;//assume u[j][N2] == 0
-				return (u[j][i - 1] - _2 * u[j][i] + u[j][i + 1]) / stepY2;
+#if !New
+				if (i == 1) return (T.Zero - _2 * u[1] + u[2]) / stepY2;//assume u[0] == 0
+				if (i == N2 - 1) return (u[N2 - 2] - _2 * u[N2 - 1] + T.Zero) / stepY2;//assume u[N2] == 0
 #else
-				if (i == 1) return (-_1 * T.Zero + _16 * T.Zero - _30 * u[j][i] + _16 * u[j][i + 1] - _1 * u[j][i + 2]) / (_12 * stepY2);//assume u[j][0] == 0, u[j][-1] == 0
-				if (i == 2) return (-_1 * T.Zero + _16 * u[j][i - 1] - _30 * u[j][i] + _16 * u[j][i + 1] - _1 * u[j][i + 2]) / (_12 * stepY2);//assume u[j][0] == 0, u[j][-1] == 0
-				if (i == N2 - 1) return (-_1 * u[j][i - 2] + _16 * u[j][i - 1] - _30 * u[j][i] + _16 * T.Zero - _1 * T.Zero) / (_12 * stepY2);//assume u[j][N2] == 0, u[j][N2+1] == 0
-				if (i == N2 - 2) return (-_1 * u[j][i - 2] + _16 * u[j][i - 1] - _30 * u[j][i] + _16 * u[j][i + 1] - _1 * T.Zero) / (_12 * stepY2);//assume u[j][N2] == 0, u[j][N2+1] == 0
-				return (-_1 * u[j][i - 2] + _16 * u[j][i - 1] - _30 * u[j][i] + _16 * u[j][i + 1] - _1 * u[j][i + 2]) / (_12 * stepY2);
+				if (i == 1) return (_2 * u[1] - _5 * u[2] + _4 * u[3] - u[4]) / stepY2;
+				if (i == N2 - 1) return (-u[N2 - 4] + _4 * u[N2 - 3] - _5 * u[N2 - 2] + _2 * u[N2 - 1]) / stepY2;
+				//if (i == 1) return (T.Zero - _5 * u[1] + _4 * u[2] - u[3]) / stepY2;
+				//if (i == N2 - 1) return (-u[N2 - 3] + _4 * u[N2 - 2] - _5 * u[N2 - 1] + T.Zero) / stepY2;
 #endif
+				return (u[i - 1] - _2 * u[i] + u[i + 1]) / stepY2;
 			}
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		T operatorBOrdinaryPrecision(T[][] y, int j, int i) => y[j][i];//j - vector number,i - its coordinates
+		T operatorBOrdinaryPrecision(T[] y, int i) => y[i];//j - vector number,i - its coordinates
 
 		struct DiagElemCoefBCoefAlfa
 		{

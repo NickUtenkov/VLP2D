@@ -58,9 +58,9 @@ namespace VLP2D.Model
 			action();
 		}
 
-		public void initInitialIterationMean(T val)
+		public void initInitialIterationValue(T val)
 		{
-			UtilsII.initInitialIterationMean<T>(getArray2D(), val);
+			UtilsII.initInitialIterationValue<T>(getArray2D(), val);
 		}
 
 		public void initInitialIterationArithmeticMean()

@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Numerics;
-using System.Runtime.ConstrainedExecution;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using VLP2D.Common;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using static VLP2D.Common.Utils;
 using static VLP2D.Common.UtilsPict;
 
@@ -138,7 +136,7 @@ namespace VLP2D.Model
 			if (Nx < 11) UtilsPrint.printJaggedArray(unDiff, "{0,11:E3}", "Diff");
 		}
 
-		public void initInitialIterationMean(T val) { }
+		public void initInitialIterationValue(T val) { }
 		public void initInitialIterationArithmeticMean() { }
 		public void initInitialIterationLinearInterpolation() { }
 		public void initInitialIterationWeightLinearInterpolation() { }

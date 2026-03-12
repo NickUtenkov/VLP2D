@@ -19,7 +19,7 @@ namespace VLP2D.Model
 		void initTopBottomBorders(Func<T, T> funcBottom, Func<T, T> funcTop, Func<T, T, T> funcBorder, ref T valMin, ref T valMax);
 		void initLeftRightBorders(Func<T, T> funcLeft, Func<T, T> funcRight, Func<T, T, T> funcBorder, ref T valMin, ref T valMax);
 		void pointsMinMax(ref T valMin, ref T valMax);
-		void initInitialIterationMean(T val);
+		void initInitialIterationValue(T val);
 		void initInitialIterationArithmeticMean();
 		void initInitialIterationLinearInterpolation();
 		void initInitialIterationWeightLinearInterpolation();
