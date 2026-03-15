@@ -1,6 +1,7 @@
 ﻿using ManagedCuda;
 using System;
 using System.Numerics;
+using System.Threading.Tasks;
 using VLP2D.Common;
 
 namespace VLP2D.Model
@@ -49,6 +50,9 @@ namespace VLP2D.Model
 				inputCU = new CudaDeviceVariable<T>(dimX * dimY);
 				outputCU = new CudaDeviceVariable<T>(dimX * dimY);
 				unmCU = new CudaDeviceVariable<T>(dimX * dimY);
+
+				alphaXCU = new CudaDeviceVariable<T>(alphaX.GetLength(0));
+				alphaYCU = new CudaDeviceVariable<T>(alphaY.GetLength(0));
 			}
 			catch (Exception)
 			{
@@ -109,14 +113,17 @@ namespace VLP2D.Model
 
 		protected void calcAlpha(T bx, T by)
 		{
-			alphaX[0] = T.Zero;
-			for (int i = 1; i < cXSegments; i++) alphaX[i] = T.One / (bx - alphaX[i - 1]);
+			Action<T, T[], int> calc = (diag, alpha, bound) =>
+			{
+				alpha[0] = T.Zero;
+				for (int i = 1; i <= bound; i++) alpha[i] = T.One / (diag - alpha[i - 1]);
+			};
 
-			alphaY[0] = T.Zero;
-			for (int i = 1; i < cYSegments; i++) alphaY[i] = T.One / (by - alphaY[i - 1]);
+			Action[] actions = [() => calc(bx, alphaX, cXSegments - 1), () => calc(by, alphaY, cYSegments - 1)];
+			Parallel.For(0, 2, GridIterator.optionsParallel, j => actions[j].Invoke());
 
-			alphaXCU = alphaX;
-			alphaYCU = alphaY;
+			alphaXCU.CopyToDevice(alphaX);
+			alphaYCU.CopyToDevice(alphaY);
 		}
 
 		bool epsExceeded()
@@ -128,15 +135,8 @@ namespace VLP2D.Model
 			return flagCU[0] == 1;
 		}
 
-		protected virtual void setKernel0Arguments(int iter)
-		{
-			args[0][0] = inputCU.DevicePointer;
-		}
-
-		protected virtual void setKernel1Arguments(int iter)
-		{
-			args[1][1] = outputCU.DevicePointer;
-		}
+		protected virtual void setKernel0Arguments(int iter) => args[0][0] = inputCU.DevicePointer;
+		protected virtual void setKernel1Arguments(int iter) => args[1][1] = outputCU.DevicePointer;
 
 		public override T[] getArray()
 		{

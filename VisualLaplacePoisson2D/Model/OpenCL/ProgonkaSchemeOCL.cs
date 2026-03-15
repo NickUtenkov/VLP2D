@@ -3,6 +3,7 @@ using DD128Numeric;
 using QD256Numeric;
 using System;
 using System.Numerics;
+using System.Threading.Tasks;
 using VLP2D.Common;
 
 namespace VLP2D.Model
@@ -41,8 +42,8 @@ namespace VLP2D.Model
 {{
 	int j = get_global_id(0);//indeces are 1-based, workgroup indeces are 1-based
 
-	for (int i = 1,i1 = dimY; i < dimX - 1; i++,i1 += dimY) unDst[i1 + j] = HP(alphaX[i] * ({0} + unDst[i1 - dimY + j]));//unSrc is used inside strRightSideX
-	for (int i = dimX - 2,i1 = dimY * (dimX - 2); i > 0; i--,i1 -= dimY) unDst[i1 + j] = HP(unDst[i1 + j] + alphaX[i] * unDst[i1 + dimY + j]);
+	for (int i = 1,i1 = dimY; i < dimX - 1; i++,i1 += dimY) dst[i1 + j] = HP(alphaX[i] * ({0} + dst[i1 - dimY + j]));//src is used inside strRightSideX
+	for (int i = dimX - 2,i1 = dimY * (dimX - 2); i > 0; i--,i1 -= dimY) dst[i1 + j] = HP(dst[i1 + j] + alphaX[i] * dst[i1 + dimY + j]);
 }}";
 
 		protected readonly string definesProgonkaY =
@@ -56,8 +57,8 @@ namespace VLP2D.Model
 	int i = get_global_id(0);//indeces are 1-based, workgroup indeces are 1-based
 
 	i *= dimY;
-	for (int j = 1; j < dimY - 1; j++) unDst[i + j] = HP(alphaY[j] * ({0} + unDst[i + j - 1]));//unSrc is used inside strRightSideY
-	for (int j = dimY - 2; j > 0; j--) unDst[i + j] = HP(unDst[i + j] + alphaY[j] * unDst[i + j + 1]);
+	for (int j = 1; j < dimY - 1; j++) dst[i + j] = HP(alphaY[j] * ({0} + dst[i + j - 1]));//src is used inside strRightSideY
+	for (int j = dimY - 2; j > 0; j--) dst[i + j] = HP(dst[i + j] + alphaY[j] * dst[i + j + 1]);
 }}";
 
 		public ProgonkaSchemeOCL(RectangleData<T> rectData, Func<T, T, T> fKsi, T epsIn, PlatformOCL platform, DeviceOCL device, bool bProgonkaFixedIters) :
@@ -84,6 +85,9 @@ namespace VLP2D.Model
 			unOCL0 = new BufferOCL<T>(commands.Context, MemoryFlagsOCL.ReadWrite, dimX * dimY);
 			unOCL1 = new BufferOCL<T>(commands.Context, MemoryFlagsOCL.ReadWrite, dimX * dimY);
 			unOCLm = new BufferOCL<T>(commands.Context, MemoryFlagsOCL.ReadWrite, dimX * dimY);
+
+			alphaXOCL = new BufferOCL<T>(commands.Context, MemoryFlagsOCL.ReadWrite, alphaX.Length);
+			alphaYOCL = new BufferOCL<T>(commands.Context, MemoryFlagsOCL.ReadWrite, alphaY.Length);
 
 			if (fKsi != null)
 			{
@@ -141,14 +145,17 @@ namespace VLP2D.Model
 
 		protected void calcAlpha(T bx, T by)
 		{
-			alphaX[0] = T.Zero;
-			for (int i = 1; i < cXSegments; i++) alphaX[i] = T.One / (bx - alphaX[i - 1]);//ax is 1.0(coeffs as in 426.xps - 1 is ax,coeff with alphaX is 1)
+			Action<T, T[], int> calc = (diag, alpha, bound) =>
+			{
+				alpha[0] = T.Zero;
+				for (int i = 1; i <= bound; i++) alpha[i] = T.One / (diag - alpha[i - 1]);
+			};
 
-			alphaY[0] = T.Zero;
-			for (int i = 1; i < cYSegments; i++) alphaY[i] = T.One / (by - alphaY[i - 1]);//ay is 1.0(coeffs as in 426.xps - 1 is ax,coeff with alphaX is 1)
+			Action[] actions = [() => calc(bx, alphaX, cXSegments - 1), () => calc(by, alphaY, cYSegments - 1)];
+			Parallel.For(0, 2, GridIterator.optionsParallel, j => actions[j].Invoke());
 
-			alphaXOCL = new BufferOCL<T>(commands.Context, MemoryFlagsOCL.ReadOnly | MemoryFlagsOCL.CopyHostPointer, alphaX);
-			alphaYOCL = new BufferOCL<T>(commands.Context, MemoryFlagsOCL.ReadOnly | MemoryFlagsOCL.CopyHostPointer, alphaY);
+			commands.WriteToBuffer(alphaX, alphaXOCL, true, null);
+			commands.WriteToBuffer(alphaY, alphaYOCL, true, null);
 		}
 
 		bool epsExceeded()

@@ -5,39 +5,27 @@ namespace VLP2D.Model
 {
 	static class VarDirProgramsCU
 	{
-		static public string createProgramProgonkaX<T>(string functionName, bool withFn, bool equalSteps)
+		static public string createProgramProgonkaX<T>(string functionName, bool withFn)
 		{
 			string kernelHeader = UtilsCU.kernelPrefix + functionName;
-			string args0 = "({0} *unSrc, {0} *unDst, {0} *alphaX, {0} srcCoefX";
+			string args0 = "({0} *src, {0} *dst, {0} *alphaX, {0} coef";
 			args0 += withFn ? ", {0} *fn)" : ")";
 			string args = string.Format(args0, Utils.getTypeName<T>());
 			string strProgramHeader = kernelHeader + args;
-			string unMult = "unSrc[i1 + j] * srcCoefX";
-			string operatorLyy = "(unSrc[i1 + (j - 1)] - 2 * unSrc[i1 + j] + unSrc[i1 + (j + 1)])";
-			string strRightSideX;
 
-			string term1 = equalSteps ? operatorLyy : string.Format("({0} * {1})", operatorLyy, "stepX2DivY2");
-			strRightSideX = string.Format("({0} + {1})", unMult, term1);
-			if (withFn) strRightSideX = string.Format("({0} + {1})", strRightSideX, "fn[i1 + j] * stepX2");
-
+			string strRightSideX = string.Format("stepX2 * (src[i1 + j] * coef + (src[i1 + (j - 1)] - 2 * src[i1 + j] + src[i1 + (j + 1)]) * oneDivY2 + {0})", withFn ? "fn[i1 + j]" : "0");
 			return strProgramHeader + String.Format(ProgonkaCU.programSourceProgonkaX, strRightSideX);
 		}
 
-		static public string createProgramProgonkaY<T>(string functionName, bool withFn, bool equalSteps)
+		static public string createProgramProgonkaY<T>(string functionName, bool withFn)
 		{
 			string kernelHeader = UtilsCU.kernelPrefix + functionName;
-			string args0 = "({0} *unSrc, {0} *unDst, {0} *alphaY, {0} srcCoefY";
+			string args0 = "({0} *src, {0} *dst, {0} *alphaY, {0} coef";
 			args0 += withFn ? ", {0} *fn)" : ")";
 			string args = string.Format(args0, Utils.getTypeName<T>());
 			string strProgramHeader = kernelHeader + args;
-			string unMult = "(unSrc[i + j] * srcCoefY)";
-			string operatorLxx = "(unSrc[(i - dimY) + j] - 2 * unSrc[i + j] + unSrc[(i + dimY) + j])";
-			string strRightSideY;
 
-			string term1 = equalSteps ? operatorLxx : string.Format("({0} * {1})", operatorLxx, "stepY2DivX2");
-			strRightSideY = string.Format("({0} + {1})", unMult, term1);
-			if (withFn) strRightSideY = string.Format("({0} + {1})", strRightSideY, "fn[i + j] * stepY2");
-
+			string strRightSideY = string.Format("stepY2 * (src[i + j] * coef + (src[(i - dimY) + j] - 2 * src[i + j] + src[(i + dimY) + j]) * oneDivX2 + {0})", withFn ? "fn[i + j]" : "0");
 			return strProgramHeader + String.Format(ProgonkaCU.programSourceProgonkaY, strRightSideY);
 		}
 	}

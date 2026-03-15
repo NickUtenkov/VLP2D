@@ -44,7 +44,10 @@ namespace MathSubstitutor
 	{
 		public RPNItem substitute(Span<RPNItem> parameters, int idx)
 		{
-			return null;
+			RPNItem arg1 = parameters[idx + 0];
+			RPNItem arg2 = parameters[idx + 1];
+			string str = string.Format("pow({0},{1})", arg1.variableOrConstant, arg2.variableOrConstant);
+			return new RPNItem(RPNItemKind.Variable, str);
 		}
 	}
 
@@ -52,7 +55,11 @@ namespace MathSubstitutor
 	{
 		public RPNItem substitute(Span<RPNItem> parameters, int idx)
 		{
-			return null;
+			RPNItem arg1 = parameters[idx + 0];
+			RPNItem arg2 = parameters[idx + 1];
+			RPNItem arg3 = parameters[idx + 2];
+			string str = string.Format("{0}?{1}:{2}", arg1.variableOrConstant, arg2.variableOrConstant, arg3.variableOrConstant);
+			return new RPNItem(RPNItemKind.Variable, str);
 		}
 	}
 
@@ -61,17 +68,19 @@ namespace MathSubstitutor
 		public static RPNItem operatorAsVariable(string prefix, Span<RPNItem> operationsStack, int idx)
 		{
 			string str = "";
-			if (operationsStack[idx + 0].kind == RPNItemKind.Variable && operationsStack[idx + 1].kind == RPNItemKind.Variable)
+			RPNItem arg1 = operationsStack[idx + 0];
+			RPNItem arg2 = operationsStack[idx + 1];
+			if (arg1.kind == RPNItemKind.Variable && arg2.kind == RPNItemKind.Variable)
 			{
-				str = string.Format(prefix + "_HH({0}, {1})", operationsStack[idx + 0].variableOrConstant, operationsStack[idx + 1].variableOrConstant);
+				str = string.Format(prefix + "_HH({0}, {1})", arg1.variableOrConstant, arg2.variableOrConstant);
 			}
-			if (operationsStack[idx + 0].kind == RPNItemKind.Variable && operationsStack[idx + 1].kind == RPNItemKind.Constant)
+			if (arg1.kind == RPNItemKind.Variable && arg2.kind == RPNItemKind.Constant)
 			{
-				str = string.Format(prefix + "_HD({0}, {1})", operationsStack[idx + 0].variableOrConstant, operationsStack[idx + 1].variableOrConstant);
+				str = string.Format(prefix + "_HD({0}, {1})", arg1.variableOrConstant, arg2.variableOrConstant);
 			}
-			if (operationsStack[idx + 0].kind == RPNItemKind.Constant && operationsStack[idx + 1].kind == RPNItemKind.Variable)
+			if (arg1.kind == RPNItemKind.Constant && arg2.kind == RPNItemKind.Variable)
 			{
-				str = string.Format(prefix + "_DH({0}, {1})", operationsStack[idx + 0].variableOrConstant, operationsStack[idx + 1].variableOrConstant);
+				str = string.Format(prefix + "_DH({0}, {1})", arg1.variableOrConstant, arg2.variableOrConstant);
 			}
 			return new RPNItem(RPNItemKind.Variable, str);
 		}
@@ -79,13 +88,14 @@ namespace MathSubstitutor
 		public static RPNItem positivationAsVariable(Span<RPNItem> operationsStack, int idx)
 		{
 			string str = "";
-			if (operationsStack[idx + 0].kind == RPNItemKind.Variable)
+			RPNItem arg1 = operationsStack[idx + 0];
+			if (arg1.kind == RPNItemKind.Variable)
 			{
-				str = string.Format("positive({0})", operationsStack[idx + 0].variableOrConstant);
+				str = string.Format("positive({0})", arg1.variableOrConstant);
 			}
-			if (operationsStack[idx + 0].kind == RPNItemKind.Constant)
+			if (arg1.kind == RPNItemKind.Constant)
 			{
-				str = string.Format("fabs({0})", operationsStack[idx + 0].variableOrConstant);
+				str = string.Format("fabs({0})", arg1.variableOrConstant);
 			}
 			return new RPNItem(RPNItemKind.Variable, str);
 		}
@@ -93,13 +103,14 @@ namespace MathSubstitutor
 		public static RPNItem negationAsVariable(Span<RPNItem> operationsStack, int idx)
 		{
 			string str = "";
-			if (operationsStack[idx + 0].kind == RPNItemKind.Variable)
+			RPNItem arg1 = operationsStack[idx + 0];
+			if (arg1.kind == RPNItemKind.Variable)
 			{
-				str = string.Format("negative({0})", operationsStack[idx + 0].variableOrConstant);
+				str = string.Format("negative({0})", arg1.variableOrConstant);
 			}
-			if (operationsStack[idx + 0].kind == RPNItemKind.Constant)
+			if (arg1.kind == RPNItemKind.Constant)
 			{
-				str = string.Format("-{0}", operationsStack[idx + 0].variableOrConstant);
+				str = string.Format("-{0}", arg1.variableOrConstant);
 			}
 			return new RPNItem(RPNItemKind.Variable, str);
 		}

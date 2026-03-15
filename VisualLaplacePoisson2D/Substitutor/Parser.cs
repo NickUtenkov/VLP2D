@@ -96,8 +96,8 @@ namespace MathSubstitutor
 						}
 						else
 						{
-							if (!IsValidVariableName(operandString))
-								throw new Exception(String.Format("{0} is not valid variable identifier1.", operandString));
+							//below commented because of e.g. i != 1
+							//if (!IsValidVariableName(operandString)) throw new Exception(String.Format("{0} is not valid variable identifier1.", operandString));*/
 							//
 							res.Add(new PreparedExpressionItem(PreparedExpressionItemKind.Variable, operandString));
 						}

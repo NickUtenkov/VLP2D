@@ -8,11 +8,9 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using VLP2D.Common;
-using VLP2D.Model.CPU;
 using VLP2D.Properties;
 using static VLP2D.Common.Utils;
 using static VLP2D.Common.UtilsPict;
@@ -367,6 +365,11 @@ namespace VLP2D.Model
 					{
 						scheme = new MultiGridSchemeOCL<T>(rectData, pFuncKsi, eps, mParams.platform, mParams.device);
 					}
+					else if (idxScheme == SchemeOCLEnum.EvolutionalFactorizationOCL)
+					{
+						scheme = new EvolutionalFactorizationSchemeOCL<T>(rectData, pFuncKsi, eps, mParams.platform, mParams.device);
+						maxIters = scheme.maxIterations();
+					}
 					else if (idxScheme == SchemeOCLEnum.CompleteReductionOCL)
 					{
 						List<BitmapSource> lst = visualize ? lstBitmap : null;
@@ -426,6 +429,11 @@ namespace VLP2D.Model
 					else if (idxScheme == SchemeCUDAEnum.MultiGridCUDA)
 					{
 						scheme = new MultiGridSchemeCU<T>(rectData, pFuncKsi, eps, mParams.cudaDevice);
+					}
+					else if (idxScheme == SchemeCUDAEnum.EvolutionalFactorizationCUDA)
+					{
+						scheme = new EvolutionalFactorizationSchemeCU<T>(rectData, eps, pFuncKsi, mParams.cudaDevice);
+						maxIters = scheme.maxIterations();
 					}
 					else if (idxScheme == SchemeCUDAEnum.CompleteReductionCUDA)
 					{

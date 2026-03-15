@@ -15,38 +15,34 @@ namespace VLP2D.Model
 		{
 			equalSteps = T.Abs(stepX - stepY) < T.Min(stepX, stepY) / T.CreateTruncating(100);
 
-			T ω1 = T.Zero, ω2 = T.Zero;
+			T ω = T.Zero;
 
 			if (!isJordan)
 			{
-				ω1 = stepX2 * _2 / dt;
-				ω2 = stepY2 * _2 / dt;
-				calcAlpha(ω1 + _2, ω2 + _2);
+				ω = _2 / dt;
+				calcAlpha(_2 + stepX2 * ω, _2 + stepY2 * ω);
 			}
 			else
 			{
 				jrd = new JordanSpeedup<T>(cXSegments, cYSegments, stepX2, stepY2, eps);
 
 				calculateIterationAlpha = calcVariableDirectionsMethodAlpha;
-
-				alphaXOCL = new BufferOCL<T>(commands.Context, MemoryFlagsOCL.ReadWrite, alphaX.Length);
-				alphaYOCL = new BufferOCL<T>(commands.Context, MemoryFlagsOCL.ReadWrite, alphaY.Length);
 			}
 
-			createProgramProgonkaX(ω1);
-			createProgramProgonkaY(ω2);
+			createProgramProgonkaX(ω);
+			createProgramProgonkaY(ω);
 		}
 
 		protected override void setKernel0Arguments(int iter)
 		{
 			base.setKernel0Arguments(iter);
-			if (jrd != null) kernels[0].SetValueArgument(5, stepX2 * jrd.w1(iter));
+			if (jrd != null) kernels[0].SetValueArgument(5, jrd.w1(iter));
 		}
 
 		protected override void setKernel1Arguments(int iter)
 		{
 			base.setKernel1Arguments(iter);
-			if (jrd != null) kernels[1].SetValueArgument(5, stepY2 * jrd.w2(iter));
+			if (jrd != null) kernels[1].SetValueArgument(5, jrd.w2(iter));
 		}
 
 		public override int maxIterations() { return (jrd != null) ? jrd.maxIters : 0; }
@@ -56,33 +52,16 @@ namespace VLP2D.Model
 			return (jrd != null) ? IterationsKind.knownInAdvance : IterationsKind.unknown;
 		}
 
-		void calcVariableDirectionsMethodAlpha(int iter)
-		{
-			alphaX[0] = T.Zero;
-			T w1kPlus2 = stepX2 * jrd.w1(iter) + _2;
-			for (int i = 1; i < cXSegments; i++) alphaX[i] = T.One / (w1kPlus2 - alphaX[i - 1]);//[SNR] p.443, top
+		void calcVariableDirectionsMethodAlpha(int iter) => calcAlpha(_2 + stepX2 * jrd.w1(iter), _2 + stepY2 * jrd.w2(iter));
 
-			alphaY[0] = T.Zero;
-			T w2kPlus2 = stepY2 * jrd.w2(iter) + _2;
-			for (int i = 1; i < cYSegments; i++) alphaY[i] = T.One / (w2kPlus2 - alphaY[i - 1]);
-
-			commands.WriteToBuffer(alphaX, alphaXOCL, true, null);
-			commands.WriteToBuffer(alphaY, alphaYOCL, true, null);
-		}
-
-		void createProgramProgonkaX(T ω1)
+		void createProgramProgonkaX(T ω)
 		{
 			string functionName = "ProgonkaX";
-			string args = "(global {0} *unSrc, global {0} *unDst, global {0} *alphaX, {0} stepX2, {0} stepX2DivY2, {0} srcCoefX" + (fn != null ? ", global {0} *fn)" : ")");
+			string args = "(global {0} *src, global {0} *dst, global {0} *alphaX, {0} stepX2, {0} oneDivY2, {0} coef" + (fn != null ? ", global {0} *fn)" : ")");
 			args = string.Format(args, Utils.getTypeName<T>());
 			string strProgramHeader = UtilsCL.kernelPrefix + functionName + args;
-			string unMult = "(unSrc[i1 + j] * srcCoefX)";
-			string operatorLyy = "(unSrc[i1 + (j - 1)] - 2.0 * unSrc[i1 + j] + unSrc[i1 + (j + 1)])";
 
-			string term1 = equalSteps ? operatorLyy : string.Format("({0} * {1})", operatorLyy, "stepX2DivY2");
-			string strRightSideX = string.Format("({0} + {1})", unMult, term1);
-			if (fn != null) strRightSideX = string.Format("({0} + {1})", strRightSideX, "fn[i1 + j] * stepX2");
-
+			string strRightSideX = string.Format("stepX2 * (src[i1 + j] * coef + (src[i1 + (j - 1)] - 2.0 * src[i1 + j] + src[i1 + (j + 1)]) * oneDivY2 + {0})", fn != null ? "fn[i1 + j]" : "0");
 			string strProgram = strDefinesProgonkaX + strProgramHeader + String.Format(programSourceProgonkaX, strRightSideX);
 
 			ProgramOCL program = createProgram(strProgram);
@@ -92,24 +71,19 @@ namespace VLP2D.Model
 			kernels[0].SetMemoryArgument(1, unOCLm);
 			kernels[0].SetMemoryArgument(2, alphaXOCL);
 			kernels[0].SetValueArgument(3, stepX2);
-			kernels[0].SetValueArgument(4, (stepX2 / stepY2));
-			if (jrd == null) kernels[0].SetValueArgument(5, ω1);//else == stepX2 * jrd.w1(iter) on each iter
+			kernels[0].SetValueArgument(4, T.One / stepY2);
+			if (jrd == null) kernels[0].SetValueArgument(5, ω);//else == jrd.w1(iter) on each iter
 			if (fn != null) kernels[0].SetMemoryArgument(6, fn);
 		}
 
-		void createProgramProgonkaY(T ω2)
+		void createProgramProgonkaY(T ω)
 		{
 			string functionName = "ProgonkaY";
-			string args = "(global {0} *unSrc, global {0} *unDst, global {0} *alphaY, {0} stepY2, {0} stepY2DivX2, {0} srcCoefY" + (fn != null ? ", global {0} *fn)" : ")");
+			string args = "(global {0} *src, global {0} *dst, global {0} *alphaY, {0} stepY2, {0} oneDivX2, {0} coef" + (fn != null ? ", global {0} *fn)" : ")");
 			args = string.Format(args, Utils.getTypeName<T>());
 			string strProgramHeader = UtilsCL.kernelPrefix + functionName + args;
-			string unMult = "(unSrc[i + j] * srcCoefY)";
-			string operatorLxx = "(unSrc[(i - dimY) + j] - 2.0 * unSrc[i + j] + unSrc[(i + dimY) + j])";
 
-			string term1 = equalSteps ? operatorLxx : string.Format("({0} * {1})", operatorLxx, "stepY2DivX2");
-			string strRightSideY = string.Format("({0} + {1})", unMult, term1);
-			if (fn != null) strRightSideY = string.Format("({0} + {1})", strRightSideY, "fn[i + j] * stepY2");
-
+			string strRightSideY = string.Format("stepY2 * (src[i + j] * coef + (src[(i - dimY) + j] - 2.0 * src[i + j] + src[(i + dimY) + j]) * oneDivX2 + {0})", fn != null ? "fn[i + j]" : "0");
 			string strProgram = strDefinesProgonkaY + strProgramHeader + String.Format(programSourceProgonkaY, strRightSideY);
 
 			ProgramOCL program = createProgram(strProgram);
@@ -119,8 +93,8 @@ namespace VLP2D.Model
 			kernels[1].SetMemoryArgument(1, unOCL1);
 			kernels[1].SetMemoryArgument(2, alphaYOCL);
 			kernels[1].SetValueArgument(3, stepY2);
-			kernels[1].SetValueArgument(4, (stepY2 / stepX2));
-			if (jrd == null) kernels[1].SetValueArgument(5, ω2);//else == stepY2 * jrd.w2(iter) on each iter
+			kernels[1].SetValueArgument(4, T.One / stepX2);
+			if (jrd == null) kernels[1].SetValueArgument(5, ω);//else == jrd.w2(iter) on each iter
 			if (fn != null) kernels[1].SetMemoryArgument(6, fn);
 		}
 	}

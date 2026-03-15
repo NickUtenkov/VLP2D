@@ -57,13 +57,17 @@ namespace VLP2D.Model
 
 		protected void calcAlpha(T bx, T by)
 		{
-			kX = αCC.upperBound(bx, cXSegments - 1);
-			alphaX[0] = T.Zero;
-			for (int i = 1; i <= kX; i++) alphaX[i] = T.One / (bx - alphaX[i - 1]);//[SNR] p.443, top
+			Action<T, T[], int> calc = (diag, alpha, bound) =>
+			{
+				alpha[0] = T.Zero;
+				for (int i = 1; i <= bound; i++) alpha[i] = T.One / (diag - alpha[i - 1]);
+			};
 
+			kX = αCC.upperBound(bx, cXSegments - 1);
 			kY = αCC.upperBound(by, cYSegments - 1);
-			alphaY[0] = T.Zero;
-			for (int i = 1; i <= kY; i++) alphaY[i] = T.One / (by - alphaY[i - 1]);
+
+			Action[] actions = [() => calc(bx, alphaX, kX), () => calc(by, alphaY, kY)];
+			Parallel.For(0, 2, GridIterator.optionsParallel, j => actions[j].Invoke());
 		}
 
 		public T doIteration(int iter)

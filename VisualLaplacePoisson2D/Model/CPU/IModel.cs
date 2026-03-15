@@ -40,6 +40,7 @@ namespace VLP2D.Model
 		SplittingOCL,
 		VarDirOCL,
 		MultiGridOCL,
+		EvolutionalFactorizationOCL,
 		CompleteReductionOCL,
 		VariablesSeparationOCL,
 		IncompleteReductionOCL,
@@ -54,6 +55,7 @@ namespace VLP2D.Model
 		SplittingCUDA,
 		VarDirCUDA,
 		MultiGridCUDA,
+		EvolutionalFactorizationCUDA,
 		CompleteReductionCUDA,
 		VariablesSeparationCUDA,
 		FACRCUDA,//IncompleteReduction

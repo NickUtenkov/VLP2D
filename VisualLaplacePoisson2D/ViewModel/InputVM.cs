@@ -22,10 +22,10 @@ namespace VLP2D.ViewModel
 			Resources.strMultiGridVC, Resources.strEvolutionalFactorization, Resources.strCR, Resources.strFA, Resources.strFACR, Resources.strMatrProgonka, Resources.strMarchingVector};
 
 		public List<String> listOCLSchemes { get; } = new List<string> { Resources.strSimpleIteration, Resources.strSlidingIteration, Resources.strSOR, Resources.strSplitting,
-			Resources.strVarDir, Resources.strMultiGridVC, Resources.strCR, Resources.strFA, Resources.strFACR, Resources.strMarchingVector};
+			Resources.strVarDir, Resources.strMultiGridVC, Resources.strEvolutionalFactorization, Resources.strCR, Resources.strFA, Resources.strFACR, Resources.strMarchingVector};
 
 		public List<String> listCUDASchemes { get; } = new List<string> { Resources.strSimpleIteration,Resources.strSlidingIteration, Resources.strSOR, Resources.strSplitting,
-			Resources.strVarDir, Resources.strMultiGridVC, Resources.strCR, Resources.strFA, Resources.strFACR, Resources.strMarchingVector};
+			Resources.strVarDir, Resources.strMultiGridVC, Resources.strEvolutionalFactorization, Resources.strCR, Resources.strFA, Resources.strFACR, Resources.strMarchingVector};
 
 		public List<UtilsCL.PlatformDevice> listOpenCLDevices { get; } = new List<UtilsCL.PlatformDevice>();
 		public List<UtilsCU.DeviceCU> listCUDADevices { get; } = new List<UtilsCU.DeviceCU>();

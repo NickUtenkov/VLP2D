@@ -24,10 +24,10 @@ namespace VLP2D.Model
 		void createProgramProgonkaX(T srcCoefX, T operatorLxxCoef, T fnCoefX)
 		{
 			string functionName = "ProgonkaX";
-			string args = "(global {0} *unSrc, global {0} *unDst, global {0} *alphaX, {0} srcCoefX, {0} operatorLxxCoef, {0} fnCoefX" + (fn != null ? ", global {0} *fn)" : ")");
+			string args = "(global {0} *src, global {0} *dst, global {0} *alphaX, {0} srcCoefX, {0} operatorLxxCoef, {0} fnCoefX" + (fn != null ? ", global {0} *fn)" : ")");
 			args = string.Format(args, Utils.getTypeName<T>());
 			string strProgramHeader = UtilsCL.kernelPrefix + functionName + args;
-			string strRightSideX = "unSrc[i1 + j] * srcCoefX + (unSrc[(i1 - dimY) + j] - 2 * unSrc[i1 + j] + unSrc[(i1 + dimY) + j]) * operatorLxxCoef";
+			string strRightSideX = "src[i1 + j] * srcCoefX + (src[(i1 - dimY) + j] - 2 * src[i1 + j] + src[(i1 + dimY) + j]) * operatorLxxCoef";
 			if (fn != null) strRightSideX += " + fnCoefX * fn[i1 + j]";
 			string strProgram = strDefinesProgonkaX + strProgramHeader + String.Format(programSourceProgonkaX, strRightSideX);
 
@@ -46,10 +46,10 @@ namespace VLP2D.Model
 		void createProgramProgonkaY(T srcCoefY, T operatorLyyCoef, T fnCoefY)
 		{
 			string functionName = "ProgonkaY";
-			string args = "(global {0} *unSrc, global {0} *unDst, global {0} *alphaY, {0} srcCoefY, {0} operatorLyyCoef, {0} fnCoefY" + (fn != null ? ", global {0} *fn)" : ")");
+			string args = "(global {0} *src, global {0} *dst, global {0} *alphaY, {0} srcCoefY, {0} operatorLyyCoef, {0} fnCoefY" + (fn != null ? ", global {0} *fn)" : ")");
 			args = string.Format(args, Utils.getTypeName<T>());
 			string strProgramHeader = UtilsCL.kernelPrefix + functionName + args;
-			string strRightSideY = "unSrc[i + j] * srcCoefY + (unSrc[i + (j - 1)] - 2 * unSrc[i + j] + unSrc[i + (j + 1)]) * operatorLyyCoef";
+			string strRightSideY = "src[i + j] * srcCoefY + (src[i + (j - 1)] - 2 * src[i + j] + src[i + (j + 1)]) * operatorLyyCoef";
 			if (fn != null) strRightSideY += " + fnCoefY * fn[i + j]";
 			string strProgram = strDefinesProgonkaY + strProgramHeader + String.Format(programSourceProgonkaY, strRightSideY);
 

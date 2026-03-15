@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using VLP2D.Common;
 
-namespace VLP2D.Model.CPU
+namespace VLP2D.Model
 {
 	//https://bitbucket.org/alexander_belov/sufarec/downloads/
 	//Программы SuFaReC для сверхбыстрого расчета эллиптических уравнений в прямоугольной области.pdf
@@ -24,12 +25,11 @@ namespace VLP2D.Model.CPU
 		Func<T[,], int, int, T> rhsX, rhsY;//Right Hand Sides
 		T[,] srcX, dstY;//source & destination array
 		AlfaСonvergentUpperBoundEpsilon αCC = new AlfaСonvergentUpperBoundEpsilon(UtilsEps.epsilon<T>());
-		int[] sAll;
 		static T _05 = T.CreateTruncating(0.5);
 		static T _2 = T.CreateTruncating(2);
 		static T _4 = T.CreateTruncating(4);
-		T[] lambda_max, lambda_min, τ;
-		T conditioning, TwoDivTau;
+		T[] τ;
+		T  twoDivTau;
 
 		public EvolutionalFactorizationScheme(RectangleData<T> rectData, T eps, Func<T, T, T> fKsi) :
 			base(rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY)
@@ -59,10 +59,10 @@ namespace VLP2D.Model.CPU
 			}
 			Func<int, int, T> right_hand = (i, j) => isPoisson ? fn[i, j] : T.Zero;
 
-			Func<T[,], int, int, T> F1 = (src, i, j) => (src[i - 1, j] - _2 * src[i, j] + src[i + 1, j]) * TwoDivTau;//operator Λₓ
-			Func<T[,], int, int, T> F2 = (src, i, j) => (src[i, j - 1] - _2 * src[i, j] + src[i, j + 1]) * TwoDivTau * ratioOfSquaresOfSteps;//operator Λᵧ
-			rhsX = (src, i, j) => right_hand(i, j) * TwoDivTau * stepX2 + F1(src, i, j) + F2(src, i, j);
-			rhsY = (src, i, j) => src[i, j] * TwoDivTau * hy2;
+			Func<T[,], int, int, T> F1 = (src, i, j) => operatorLxx(src, i, j);//operator Λₓ
+			Func<T[,], int, int, T> F2 = (src, i, j) => operatorLyy(src, i, j) * ratioOfSquaresOfSteps;//operator Λᵧ
+			rhsX = (src, i, j) => (right_hand(i, j) * stepX2 + F1(src, i, j) + F2(src, i, j)) * twoDivTau;
+			rhsY = (src, i, j) => src[i, j] * twoDivTau * hy2;
 
 			hx2 = stepX2 / _4;//== (stepX/2)^2
 			hy2 = stepY2 / _4;//== (stepY/2)^2
@@ -110,13 +110,27 @@ namespace VLP2D.Model.CPU
 
 		public override IterationsKind iterationsKind() => IterationsKind.knownInAdvance;
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		protected T operatorLxx(T[,] u, int i, int j)
+		{//using without dividing by step2(not needed in some cases)
+			return u[i - 1, j] - u[i, j] * _2 + u[i + 1, j];
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		protected T operatorLyy(T[,] u, int i, int j)
+		{//using without dividing by step2(not needed in some cases)
+			return u[i, j - 1] - u[i, j] * _2 + u[i, j + 1];
+		}
+
 		T[] calculateTau()
 		{
+			T conditioning;
+			T[] lambda_max, lambda_min;
 			(lambda_max, lambda_min, conditioning) = spectrumEstimates();
 			T epsilon_background = T.CreateTruncating(UtilsEps.epsilon<T>()) * conditioning;//can use UtilsEps.epsilonBackground<T>()
 			T eps_grid_sys = eps;
 			T epsilon = T.Max(epsilon_background, eps_grid_sys);
-			sAll = numberOfSteps(double.CreateTruncating(conditioning), double.CreateTruncating(epsilon));
+			int[] sAll = numberOfSteps(double.CreateTruncating(conditioning), double.CreateTruncating(epsilon));
 			List<T> listτ = new List<T>();
 			for (int i = 0; i < sAll.Length; i++)
 			{
@@ -187,22 +201,26 @@ namespace VLP2D.Model.CPU
 
 		void evolutionalFactorization(T τ)
 		{
-			TwoDivTau = _2 / τ;
+			twoDivTau = _2 / τ;
 
-			calcAlpha(_2 + TwoDivTau * hx2, _2 + TwoDivTau * hy2);
+			calcAlpha(_2 + twoDivTau * hx2, _2 + twoDivTau * hy2);
 			Parallel.For(1, cYSegments, GridIterator.optionsParallel, k => progonkaX(srcX, unm, k));
 			Parallel.For(1, cXSegments, GridIterator.optionsParallel, n => progonkaY(unm, dstY, srcX, n, τ));
 		}
 
 		protected void calcAlpha(T bx, T by)
 		{
-			kX = αCC.upperBound(bx, cXSegments - 1);
-			alphaX[0] = T.Zero;
-			for (int i = 1; i <= kX; i++) alphaX[i] = T.One / (bx - alphaX[i - 1]);
+			Action<T, T[], int> calc = (diag, alpha, bound) =>
+			{
+				alpha[0] = T.Zero;
+				for (int i = 1; i <= bound; i++) alpha[i] = T.One / (diag - alpha[i - 1]);
+			};
 
+			kX = αCC.upperBound(bx, cXSegments - 1);
 			kY = αCC.upperBound(by, cYSegments - 1);
-			alphaY[0] = T.Zero;
-			for (int i = 1; i <= kY; i++) alphaY[i] = T.One / (by - alphaY[i - 1]);
+
+			Action[] actions = [() => calc(bx, alphaX, kX), () => calc(by, alphaY, kY)];
+			Parallel.For(0, 2, GridIterator.optionsParallel, j => actions[j].Invoke());
 		}
 
 		void progonkaX(T[,] src, T[,] dst, int j)

@@ -1,6 +1,4 @@
-﻿using ManagedCuda;
-
-namespace VLP2D.Model
+﻿namespace VLP2D.Model
 {
 	static class ProgonkaCU
 	{
@@ -16,8 +14,8 @@ static __device__ __constant__ int dimX, dimY, upperX, upperY;
 
 	if (j <= upperY)
 	{{
-		for (int i = 1,i1 = dimY; i < dimX - 1; i++,i1 += dimY) unDst[i1 + j] = alphaX[i] * ({0} + unDst[i1 - dimY + j]);//unSrc is used inside strRightSideX
-		for (int i = dimX - 2,i1 = dimY * (dimX - 2); i > 0; i--,i1 -= dimY) unDst[i1 + j] += alphaX[i] * unDst[i1 + dimY + j];
+		for (int i = 1,i1 = dimY; i < dimX - 1; i++,i1 += dimY) dst[i1 + j] = alphaX[i] * ({0} + dst[i1 - dimY + j]);//src is used inside strRightSideX
+		for (int i = dimX - 2,i1 = dimY * (dimX - 2); i > 0; i--,i1 -= dimY) dst[i1 + j] += alphaX[i] * dst[i1 + dimY + j];
 	}}
 }}
 ";
@@ -30,8 +28,8 @@ static __device__ __constant__ int dimX, dimY, upperX, upperY;
 	if (i <= upperX)
 	{{
 		i *= dimY;
-		for (int j = 1; j < dimY - 1; j++) unDst[i + j] = alphaY[j] * ({0} + unDst[i + j - 1]);//unSrc is used inside strRightSideY
-		for (int j = dimY - 2; j > 0; j--) unDst[i + j] += alphaY[j] * unDst[i + j + 1];
+		for (int j = 1; j < dimY - 1; j++) dst[i + j] = alphaY[j] * ({0} + dst[i + j - 1]);//src is used inside strRightSideY
+		for (int j = dimY - 2; j > 0; j--) dst[i + j] += alphaY[j] * dst[i + j + 1];
 	}}
 }}
 ";

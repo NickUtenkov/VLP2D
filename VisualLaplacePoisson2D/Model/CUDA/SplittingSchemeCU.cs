@@ -29,7 +29,9 @@ namespace VLP2D.Model
 			string functionNameY = "ProgonkaY";
 
 			module = UtilsCU.loadModule(moduleName, ctx);
+#if !DEBUG//remove !
 			if (module == null)
+#endif
 			{
 				string strProgram = ProgonkaCU.strDefinesProgonkaXY;
 
