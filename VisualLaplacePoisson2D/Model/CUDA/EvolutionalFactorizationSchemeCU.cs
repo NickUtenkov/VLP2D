@@ -23,9 +23,8 @@ namespace VLP2D.Model
 		object[][] args;
 		T[] un;
 		bool unChanged = false;
-		static T _05 = T.CreateTruncating(0.5), _2 = T.CreateTruncating(2), _4 = T.CreateTruncating(4);
-		T[] lambda_max, lambda_min, τ;
-		T conditioning;
+		static T _2 = T.CreateTruncating(2), _4 = T.CreateTruncating(4);
+		T[] τ;
 
 		public EvolutionalFactorizationSchemeCU(RectangleData<T> rectData, T epsIn, Func<T, T, T> fKsi, int cudaDevice) :
 			base(rectData.xMin, rectData.yMin, rectData.stepX, rectData.stepY)
@@ -77,7 +76,7 @@ namespace VLP2D.Model
 			hx2 = stepX2 / _4;//== (stepX/2)^2
 			hy2 = stepY2 / _4;//== (stepY/2)^2
 
-			τ = calculateTau();
+			τ = UtilsLT<T>.calculateTau(eps, hx2, hy2, xMax - xMin, yMax - yMin);
 
 			CUmodule? module;
 			string name = "EvolFactor_";
@@ -216,81 +215,6 @@ namespace VLP2D.Model
 			if (kernels != null) ctx?.UnloadModule(kernels[0].CUModule);
 			ctx?.Dispose();
 			ctx = null;
-		}
-
-		T[] calculateTau()
-		{
-			(lambda_max, lambda_min, conditioning) = spectrumEstimates();
-			T epsilon_background = T.CreateTruncating(UtilsEps.epsilon<T>()) * conditioning;//can use UtilsEps.epsilonBackground<T>()
-			T eps_grid_sys = eps;
-			T epsilon = T.Max(epsilon_background, eps_grid_sys);
-			int[] sAll = numberOfSteps(double.CreateTruncating(conditioning), double.CreateTruncating(epsilon));
-			List<T> listτ = new List<T>();
-			for (int i = 0; i < sAll.Length; i++)
-			{
-				int S = sAll[i];
-				T[] tau_lt = logarithmicSet(lambda_max, lambda_min, S);
-				if (i == 0) listτ.AddRange(tau_lt);
-				else for (int s = 1; s <= S / 2; s++) listτ.Add(tau_lt[2 * s - 1]);
-			}
-
-			return listτ.ToArray();
-		}
-
-		(T[], T[], T) spectrumEstimates()
-		{//Constructs estimates for spectrum boundaries of the grid system
-			T est_x = _4 / hx2;
-			T est_y = _4 / hy2;
-			T[] lambda_max = [est_x, est_y];
-			T lx = xMax - xMin;
-			T ly = yMax - yMin;
-			T pilx = T.Pi / lx;
-			T pily = T.Pi / ly;
-			T[] lambda_min = [pilx * pilx, pily * pily];
-			T conditioning = (lambda_max[0] + lambda_max[1]) / (lambda_min[0] + lambda_min[1]);
-			return (lambda_max, lambda_min, conditioning);
-		}
-
-		int[] numberOfSteps(double relation, double epsilon)
-		{// Calculates the numbers of steps in nested logarithmic grids via a priori convergence estimate
-			int count = 10;
-			double[] S_temp = new double[count];
-			int I = 0;
-			S_temp[0] = double.Ceiling(-(4 / (Math.PI * Math.PI + 2 * Math.PI)) * Math.Log(relation) * Math.Log(epsilon));
-			while (S_temp[I] >= 2)
-			{
-				S_temp[I + 1] = S_temp[I] / 2;
-				I = I + 1;
-				if (I == count) break;
-			}
-
-			int[] sAll = new int[I];
-			double ceil = double.Ceiling(S_temp[I]);
-			for (int m = 0; m < I; m++) sAll[m] = (int)(ceil * Math.Pow(2, m));
-
-			return sAll;
-		}
-
-		T[] logarithmicSet(T[] lambda_max, T[] lambda_min, int S)
-		{// Constructs linear-trigonometric set in logarithmic scale with given number of steps
-			T τMin = _2 / (lambda_max[0] + lambda_max[1]);
-			T τMax = _2 / (lambda_min[0] + lambda_min[1]);
-			T center = _05 * T.Log(τMin * τMax);
-			T width = _05 * T.Log(τMax / τMin);
-			T piPlus2 = T.Pi + _2;
-			T _2Div = _2 / piPlus2;
-			T piDiv = T.Pi / piPlus2;
-
-			T[] τ = new T[S + 1];
-			T _S = T.CreateTruncating(S);
-			for (int s = 0; s <= S; s++)
-			{
-				T θ = T.CreateTruncating(s) / _S;
-				T lt = _2Div * T.Cos(θ * T.Pi - T.Pi) + piDiv * (_2 * θ - T.One);
-				τ[s] = T.Pow(T.E, center + width * lt);
-			}
-
-			return τ;
 		}
 	}
 }
