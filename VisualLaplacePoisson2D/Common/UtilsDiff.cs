@@ -7,23 +7,24 @@ using static VLP2D.Common.Utils;
 
 namespace VLP2D.Common
 {
-	internal class UtilsDiff
+	internal class UtilsDiff<T> where T : INumber<T>, IMinMaxValue<T>
 	{
+		static T[] fMin = new T[Environment.ProcessorCount], fMax = new T[Environment.ProcessorCount];
+
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static void updateMinMax<T>(T val, ref T fMin, ref T fMax) where T : INumber<T>
+		public static void updateMinMax(T val, ref T fMin, ref T fMax)
 		{
 			if (fMin > val) fMin = val;
 			if (fMax < val) fMax = val;
 		}
 
-		public static void pointsMinMax<T>(Adapter2D<T> adapter, ref T valMin, ref T valMax) where T : INumber<T>, IMinMaxValue<T>
+		public static void pointsMinMax(Adapter2D<T> adapter, ref T valMin, ref T valMax)
 		{
 			int cLoop = Math.Min(adapter.dim1 - 1, GridIterator.optionsParallel.MaxDegreeOfParallelism);
-			T[] fMin = new T[cLoop], fMax = new T[cLoop];
-			Array.Fill(fMin, T.MaxValue);
-			Array.Fill(fMax, T.MinValue);
 			Parallel.For(0, cLoop, GridIterator.optionsParallel, (core) =>
 			{
+				fMin[core] = T.MaxValue;
+				fMax[core] = T.MinValue;
 				for (int i = 0 + core; i < adapter.dim1; i += cLoop)
 				{
 					for (int j = 0; j < adapter.dim2; j++)
@@ -39,18 +40,17 @@ namespace VLP2D.Common
 			}
 		}
 
-		public static void calculateDifference<T>(Adapter2D<T> adapter, T[][] unDiff, T xMin, T yMin, T stpX, T stpY, Func<T, T, T> funcAnalitic, ref T valMin, ref T valMax, Func<bool> canceled, Action<double> reportProgress) where T : INumber<T>, IMinMaxValue<T>//, IMultiplyOperators<T, double, T>
+		public static void calculateDifference(Adapter2D<T> adapter, T[][] unDiff, T xMin, T yMin, T stpX, T stpY, Func<T, T, T> funcAnalitic, ref T valMin, ref T valMax, Func<bool> canceled, Action<double> reportProgress)
 		{
 			ulong progressSteps = (ulong)((adapter.dim1 - 1) * (adapter.dim2 - 1)), curProgress = 0;//UInt64
 			reportProgress?.Invoke(0);
 
 			int cLoop = Math.Min(adapter.dim1 - 1, GridIterator.optionsParallel.MaxDegreeOfParallelism);
-			T[] fMin = new T[cLoop], fMax = new T[cLoop];
-			Array.Fill(fMin, T.MaxValue);
-			Array.Fill(fMax, T.MinValue);
 			T incX = stpX * T.CreateTruncating(cLoop);
 			Parallel.For(0, cLoop, GridIterator.optionsParallel, (core) =>
 			{
+				fMin[core] = T.MaxValue;
+				fMax[core] = T.MinValue;
 				T x = xMin + stpX * T.CreateTruncating(1 + core);
 				for (int i = 1 + core; i < adapter.dim1; i += cLoop)
 				{

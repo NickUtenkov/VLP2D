@@ -1,5 +1,6 @@
 ﻿using FFTWSharp;
 using System;
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using VLP2D.Common;
@@ -8,7 +9,7 @@ namespace VLP2D.Model
 {
 	public class FFTWSineTransform<T> : IFFT<T> where T : INumber<T>, ITrigonometricFunctions<T>//, IAdditionOperators<T, double, T>, ISubtractionOperators<T, double, T>, IMultiplyOperators<T, double, T>, IDivisionOperators<T, double, T>
 	{
-		readonly int n, fftInOutSize;
+		readonly int n;
 		readonly T[] inoutSignal;
 		GCHandle hin;
 		readonly IntPtr plan;
@@ -23,7 +24,7 @@ namespace VLP2D.Model
 			destroyPlan = typeof(T) == typeof(float) ? fftwf.destroy_plan : fftw.destroy_plan;
 
 			n = fftSize;
-			fftInOutSize = (n / 2 + 1) * FFTConstant.sizeOfComplex;
+			int fftInOutSize = (n / 2 + 1) * FFTConstant.sizeOfComplex;
 			inoutSignal = new T[fftInOutSize];//DFT output satisfies the “Hermitian” redundancy
 
 			hin = GCHandle.Alloc(inoutSignal, GCHandleType.Pinned);

@@ -68,16 +68,16 @@ namespace VLP2D.Common
 					unSrc[i, 0] = (funcBottom != null) ? funcBottom(x) : funcBorder(x, yMin);
 					unSrc[i, upperY] = (funcTop != null) ? funcTop(x) : funcBorder(x, yMax);
 
-					UtilsDiff.updateMinMax(unSrc[i, 0], ref fMin[core], ref fMax[core]);
-					UtilsDiff.updateMinMax(unSrc[i, upperY], ref fMin[core], ref fMax[core]);
+					UtilsDiff<T>.updateMinMax(unSrc[i, 0], ref fMin[core], ref fMax[core]);
+					UtilsDiff<T>.updateMinMax(unSrc[i, upperY], ref fMin[core], ref fMax[core]);
 
 					x += incX;
 				}
 			});
 			for (int i = 0; i < cLoop; i++)
 			{
-				if (fMin[i] != T.MaxValue) UtilsDiff.updateMinMax(fMin[i], ref valMin, ref valMax);
-				if (fMax[i] != T.MinValue) UtilsDiff.updateMinMax(fMax[i], ref valMin, ref valMax);
+				if (fMin[i] != T.MaxValue) UtilsDiff<T>.updateMinMax(fMin[i], ref valMin, ref valMax);
+				if (fMax[i] != T.MinValue) UtilsDiff<T>.updateMinMax(fMax[i], ref valMin, ref valMax);
 			}
 		}
 
@@ -99,16 +99,16 @@ namespace VLP2D.Common
 					unSrc[i][0] = (funcBottom != null) ? funcBottom(x) : funcBorder(x, yMin);
 					unSrc[i][upperY] = (funcTop != null) ? funcTop(x) : funcBorder(x, yMax);
 
-					UtilsDiff.updateMinMax(unSrc[i][0], ref fMin[core], ref fMax[core]);
-					UtilsDiff.updateMinMax(unSrc[i][upperY], ref fMin[core], ref fMax[core]);
+					UtilsDiff<T>.updateMinMax(unSrc[i][0], ref fMin[core], ref fMax[core]);
+					UtilsDiff<T>.updateMinMax(unSrc[i][upperY], ref fMin[core], ref fMax[core]);
 
 					x += incX;
 				}
 			});
 			for (int i = 0; i < cLoop; i++)
 			{
-				if (fMin[i] != T.MaxValue) UtilsDiff.updateMinMax(fMin[i], ref valMin, ref valMax);
-				if (fMax[i] != T.MinValue) UtilsDiff.updateMinMax(fMax[i], ref valMin, ref valMax);
+				if (fMin[i] != T.MaxValue) UtilsDiff<T>.updateMinMax(fMin[i], ref valMin, ref valMax);
+				if (fMax[i] != T.MinValue) UtilsDiff<T>.updateMinMax(fMax[i], ref valMin, ref valMax);
 			}
 		}
 
@@ -130,16 +130,16 @@ namespace VLP2D.Common
 					unSrc[i * dim2 + 0] = (funcBottom != null) ? funcBottom(x) : funcBorder(x, yMin);
 					unSrc[i * dim2 + upperY] = (funcTop != null) ? funcTop(x) : funcBorder(x, yMax);
 
-					UtilsDiff.updateMinMax(unSrc[i * dim2 + 0], ref fMin[core], ref fMax[core]);
-					UtilsDiff.updateMinMax(unSrc[i * dim2 + upperY], ref fMin[core], ref fMax[core]);
+					UtilsDiff<T>.updateMinMax(unSrc[i * dim2 + 0], ref fMin[core], ref fMax[core]);
+					UtilsDiff<T>.updateMinMax(unSrc[i * dim2 + upperY], ref fMin[core], ref fMax[core]);
 
 					x += incX;
 				}
 			});
 			for (int i = 0; i < cLoop; i++)
 			{
-				UtilsDiff.updateMinMax(fMin[i], ref valMin, ref valMax);
-				UtilsDiff.updateMinMax(fMax[i], ref valMin, ref valMax);
+				UtilsDiff<T>.updateMinMax(fMin[i], ref valMin, ref valMax);
+				UtilsDiff<T>.updateMinMax(fMax[i], ref valMin, ref valMax);
 			}
 		}
 
@@ -162,16 +162,16 @@ namespace VLP2D.Common
 					unSrc[0, j] = (funcLeft != null) ? funcLeft(y) : funcBorder(xMin, y);
 					unSrc[upperX, j] = (funcRight != null) ? funcRight(y) : funcBorder(xMax, y);
 
-					UtilsDiff.updateMinMax(unSrc[0, j], ref fMin[core], ref fMax[core]);
-					UtilsDiff.updateMinMax(unSrc[upperX, j], ref fMin[core], ref fMax[core]);
+					UtilsDiff<T>.updateMinMax(unSrc[0, j], ref fMin[core], ref fMax[core]);
+					UtilsDiff<T>.updateMinMax(unSrc[upperX, j], ref fMin[core], ref fMax[core]);
 
 					y += incY;
 				}
 			});
 			for (int i = 0; i < cLoop; i++)
 			{
-				if (fMin[i] != T.MaxValue) UtilsDiff.updateMinMax(fMin[i], ref valMin, ref valMax);
-				if (fMax[i] != T.MinValue) UtilsDiff.updateMinMax(fMax[i], ref valMin, ref valMax);
+				if (fMin[i] != T.MaxValue) UtilsDiff<T>.updateMinMax(fMin[i], ref valMin, ref valMax);
+				if (fMax[i] != T.MinValue) UtilsDiff<T>.updateMinMax(fMax[i], ref valMin, ref valMax);
 			}
 		}
 
@@ -194,16 +194,16 @@ namespace VLP2D.Common
 					unSrc[0][j] = (funcLeft != null) ? funcLeft(y) : funcBorder(xMin, y);
 					unSrc[upperX][j] = (funcRight != null) ? funcRight(y) : funcBorder(xMax, y);
 
-					UtilsDiff.updateMinMax(unSrc[0][j], ref fMin[core], ref fMax[core]);
-					UtilsDiff.updateMinMax(unSrc[upperX][j], ref fMin[core], ref fMax[core]);
+					UtilsDiff<T>.updateMinMax(unSrc[0][j], ref fMin[core], ref fMax[core]);
+					UtilsDiff<T>.updateMinMax(unSrc[upperX][j], ref fMin[core], ref fMax[core]);
 
 					y += incY;
 				}
 			});
 			for (int i = 0; i < cLoop; i++)
 			{
-				if (fMin[i] != T.MaxValue) UtilsDiff.updateMinMax(fMin[i], ref valMin, ref valMax);
-				if (fMax[i] != T.MinValue) UtilsDiff.updateMinMax(fMax[i], ref valMin, ref valMax);
+				if (fMin[i] != T.MaxValue) UtilsDiff<T>.updateMinMax(fMin[i], ref valMin, ref valMax);
+				if (fMax[i] != T.MinValue) UtilsDiff<T>.updateMinMax(fMax[i], ref valMin, ref valMax);
 			}
 		}
 
@@ -225,16 +225,16 @@ namespace VLP2D.Common
 					unSrc[0 * dim2 + j] = (funcLeft != null) ? funcLeft(y) : funcBorder(xMin, y);
 					unSrc[upperX * dim2 + j] = (funcRight != null) ? funcRight(y) : funcBorder(xMax, y);
 
-					UtilsDiff.updateMinMax(unSrc[0 * dim2 + j], ref fMin[core], ref fMax[core]);
-					UtilsDiff.updateMinMax(unSrc[upperX * dim2 + j], ref fMin[core], ref fMax[core]);
+					UtilsDiff<T>.updateMinMax(unSrc[0 * dim2 + j], ref fMin[core], ref fMax[core]);
+					UtilsDiff<T>.updateMinMax(unSrc[upperX * dim2 + j], ref fMin[core], ref fMax[core]);
 
 					y += incY;
 				}
 			});
 			for (int i = 0; i < cLoop; i++)
 			{
-				UtilsDiff.updateMinMax(fMin[i], ref valMin, ref valMax);
-				UtilsDiff.updateMinMax(fMax[i], ref valMin, ref valMax);
+				UtilsDiff<T>.updateMinMax(fMin[i], ref valMin, ref valMax);
+				UtilsDiff<T>.updateMinMax(fMax[i], ref valMin, ref valMax);
 			}
 		}
 	}

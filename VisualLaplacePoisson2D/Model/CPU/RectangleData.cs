@@ -43,14 +43,14 @@ namespace VLP2D.Model
 				{
 					T ratio = T.CreateTruncating(cXSegments) / T.CreateTruncating(cYSegments);
 #if UsePower2
-					cYSegments = 1 << Utils.calculatePowOf2(cYSegments);
+					if (typeof(T) != typeof(float) && typeof(T) != typeof(double)) cYSegments = 1 << Utils.calculatePowOf2(cYSegments);//for Lomont FFT
 #else
 					//if ((cYSegments & 1) == 1) cYSegments++;//make cYSegments even for FFTSineTransform correct work
 #endif
 					if (varSepMethodCPU == VarSepMethodsEnum.Progonka)//can not be pow of 2(because fft for cXSegments is not used)
 					{
 						cXSegments = (int)uint.CreateTruncating(ratio * T.CreateTruncating(cYSegments));
-						if ((cXSegments & 1) == 0) cXSegments++;//make cXSegments odd for meeting progonka(used only one formula in such a case),MeetingProgonka
+						//if ((cXSegments & 1) == 0) cXSegments++;//make cXSegments odd for meeting progonka(used only one formula in such a case),MeetingProgonka
 					}
 					else if (varSepMethodCPU == VarSepMethodsEnum.Reduction)
 					{

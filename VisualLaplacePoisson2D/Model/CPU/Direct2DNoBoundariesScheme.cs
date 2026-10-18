@@ -59,16 +59,16 @@ namespace VLP2D.Model
 					T val1 = ((funcTop != null) ? funcTop(x) : funcBorder(x, yMax));
 					un[i, dim2 - 1] += (val1 / stepY2);//[SNR] p.190, (19)
 
-					UtilsDiff.updateMinMax(val0, ref fMin[core], ref fMax[core]);
-					UtilsDiff.updateMinMax(val1, ref fMin[core], ref fMax[core]);
+					UtilsDiff<T>.updateMinMax(val0, ref fMin[core], ref fMax[core]);
+					UtilsDiff<T>.updateMinMax(val1, ref fMin[core], ref fMax[core]);
 
 					x += incX;
 				}
 			});
 			for (int i = 0; i < cLoop; i++)
 			{
-				UtilsDiff.updateMinMax(fMin[i], ref valMin, ref valMax);
-				UtilsDiff.updateMinMax(fMax[i], ref valMin, ref valMax);
+				UtilsDiff<T>.updateMinMax(fMin[i], ref valMin, ref valMax);
+				UtilsDiff<T>.updateMinMax(fMax[i], ref valMin, ref valMax);
 			}
 		}
 
@@ -91,23 +91,23 @@ namespace VLP2D.Model
 					T val1 = (funcRight != null) ? funcRight(y) : funcBorder(xMax, y);
 					un[dim1 - 1, j] += (val1 / stepX2);//[SNR] p.190, (19)
 
-					UtilsDiff.updateMinMax(val0, ref fMin[core], ref fMax[core]);
-					UtilsDiff.updateMinMax(val1, ref fMin[core], ref fMax[core]);
+					UtilsDiff<T>.updateMinMax(val0, ref fMin[core], ref fMax[core]);
+					UtilsDiff<T>.updateMinMax(val1, ref fMin[core], ref fMax[core]);
 
 					y += incY;
 				}
 			});
 			for (int i = 0; i < cLoop; i++)
 			{
-				UtilsDiff.updateMinMax(fMin[i], ref valMin, ref valMax);
-				UtilsDiff.updateMinMax(fMax[i], ref valMin, ref valMax);
+				UtilsDiff<T>.updateMinMax(fMin[i], ref valMin, ref valMax);
+				UtilsDiff<T>.updateMinMax(fMax[i], ref valMin, ref valMax);
 			}
 		}
 
 		public void pointsMinMax(ref T valMin, ref T valMax)
 		{
 			T valMin1 = T.MaxValue, valMax1 = T.MinValue;
-			iterate((i, j) => UtilsDiff.updateMinMax(un[i, j], ref valMin1, ref valMax1));
+			iterate((i, j) => UtilsDiff<T>.updateMinMax(un[i, j], ref valMin1, ref valMax1));
 			valMin = valMin1;
 			valMax = valMax1;
 		}
@@ -126,7 +126,7 @@ namespace VLP2D.Model
 		{
 			(int, int) dims = getArrayDimensions();
 			Adapter2D<T> adapter = new Adapter2D<T>(dims.Item1, dims.Item2, (i, j) => un[i - 1, j - 1]);
-			UtilsDiff.calculateDifference(adapter, unDiff, xMin, yMin, stepX, stepY, funcAnalitic, ref valMin, ref valMax, canceled, reportProgress);
+			UtilsDiff<T>.calculateDifference(adapter, unDiff, xMin, yMin, stepX, stepY, funcAnalitic, ref valMin, ref valMax, canceled, reportProgress);
 		}
 
 		public void iterate(Action<int, int> func)

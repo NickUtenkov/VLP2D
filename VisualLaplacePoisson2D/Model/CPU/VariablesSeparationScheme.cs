@@ -65,15 +65,17 @@ namespace VLP2D.Model
 
 		protected void transferBoundaryValuesToNearBoundaryNodes()
 		{//[SNR] p.190, (19)
+			T cx = T.One / stepX2;
+			T cy = T.One / stepY2;
 			Parallel.For(1, N2, (j) =>
 			{
-				fn[1][j] += un[0][j] / stepX2;
-				fn[N1 - 1][j] += un[N1][j] / stepX2;
+				fn[1][j] += un[0][j] * cx;
+				fn[N1 - 1][j] += un[N1][j] * cx;
 			});
 			Parallel.For(1, N1, (i) =>
 			{
-				fn[i][1] += un[i][0] / stepY2;
-				fn[i][N2 - 1] += un[i][N2] / stepY2;
+				fn[i][1] += un[i][0] * cy;
+				fn[i][N2 - 1] += un[i][N2] * cy;
 			});
 		}
 

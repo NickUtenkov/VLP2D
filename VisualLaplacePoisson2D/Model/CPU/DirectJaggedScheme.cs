@@ -57,16 +57,16 @@ namespace VLP2D.Model
 					bndB[i] = (funcBottom != null) ? funcBottom(x) : funcBorder(x, yMin);
 					bndT[i] = (funcTop != null) ? funcTop(x) : funcBorder(x, yMax);
 
-					UtilsDiff.updateMinMax(bndB[i], ref fMin[core], ref fMax[core]);
-					UtilsDiff.updateMinMax(bndT[i], ref fMin[core], ref fMax[core]);
+					UtilsDiff<T>.updateMinMax(bndB[i], ref fMin[core], ref fMax[core]);
+					UtilsDiff<T>.updateMinMax(bndT[i], ref fMin[core], ref fMax[core]);
 
 					x += incX;
 				}
 			});
 			for (int i = 0; i < cLoop; i++)
 			{
-				UtilsDiff.updateMinMax(fMin[i], ref valMin, ref valMax);
-				UtilsDiff.updateMinMax(fMax[i], ref valMin, ref valMax);
+				UtilsDiff<T>.updateMinMax(fMin[i], ref valMin, ref valMax);
+				UtilsDiff<T>.updateMinMax(fMax[i], ref valMin, ref valMax);
 			}
 			unLB = (funcBottom != null) ? funcBottom(xMin) : funcBorder(xMin, yMin);//or funcLeft(yMin)
 			unLT = (funcTop != null) ? funcTop(xMin) : funcBorder(xMin, yMax);//or funcLeft(yMax)
@@ -91,8 +91,8 @@ namespace VLP2D.Model
 					bndL[j] = (funcLeft != null) ? funcLeft(y) : funcBorder(xMin, y);
 					bndR[j] = (funcRight != null) ? funcRight(y) : funcBorder(xMax, y);
 
-					UtilsDiff.updateMinMax(bndL[j], ref range.min, ref range.max);
-					UtilsDiff.updateMinMax(bndR[j], ref range.min, ref range.max);
+					UtilsDiff<T>.updateMinMax(bndL[j], ref range.min, ref range.max);
+					UtilsDiff<T>.updateMinMax(bndR[j], ref range.min, ref range.max);
 
 					y += incY;
 				}
@@ -102,8 +102,8 @@ namespace VLP2D.Model
 			{
 				lock (locker)
 				{
-					UtilsDiff.updateMinMax(range.min, ref min, ref max);
-					UtilsDiff.updateMinMax(range.max, ref min, ref max);
+					UtilsDiff<T>.updateMinMax(range.min, ref min, ref max);
+					UtilsDiff<T>.updateMinMax(range.max, ref min, ref max);
 				}
 			});
 			valMin = min;
@@ -113,7 +113,7 @@ namespace VLP2D.Model
 		public void pointsMinMax(ref T valMin, ref T valMax)
 		{
 			T valMin1 = T.MaxValue, valMax1 = T.MinValue;
-			GridIterator.iterate(0, un.GetUpperBound(0) + 1, 0, un[0].GetUpperBound(0) + 1, (i, j) => UtilsDiff.updateMinMax(un[i][j], ref valMin1, ref valMax1));
+			GridIterator.iterate(0, un.GetUpperBound(0) + 1, 0, un[0].GetUpperBound(0) + 1, (i, j) => UtilsDiff<T>.updateMinMax(un[i][j], ref valMin1, ref valMax1));
 			valMin = (T)valMin1;
 			valMax = (T)valMax1;
 		}
@@ -132,7 +132,7 @@ namespace VLP2D.Model
 		{
 			(int, int) dims = getArrayDimensions();
 			Adapter2D<T> adapter = new Adapter2D<T>(dims.Item1, dims.Item2, (i, j) => un[i][j]);
-			UtilsDiff.calculateDifference(adapter, unDiff, xMin, yMin, stepX, stepY, funcAnalitic, ref fMin, ref fMax, canceled, reportProgress);
+			UtilsDiff<T>.calculateDifference(adapter, unDiff, xMin, yMin, stepX, stepY, funcAnalitic, ref fMin, ref fMax, canceled, reportProgress);
 			if (Nx < 11) UtilsPrint.printJaggedArray(unDiff, "{0,11:E3}", "Diff");
 		}
 

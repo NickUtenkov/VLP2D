@@ -42,7 +42,7 @@ namespace VLP2D.Model
 			T[] ar = getArray();
 			(int, int) dims = getArrayDimensions();
 			Adapter2D<T> adapter = new Adapter2D<T>(dims.Item1, dims.Item2, (i, j) => ar[i * dims.Item2 + j]);
-			UtilsDiff.pointsMinMax(adapter, ref valMin, ref valMax);
+			UtilsDiff<T>.pointsMinMax(adapter, ref valMin, ref valMax);
 		}
 
 		public BitmapSource createBitmap(MinMaxF minMax, Func<bool, MinMaxF, Adapter2D<float>, BitmapSource> fCreateBitmap)
@@ -81,7 +81,7 @@ namespace VLP2D.Model
 			T[] ar = getArray();
 			(int, int) dims = getArrayDimensions();
 			Adapter2D<T> adapter = new Adapter2D<T>(dims.Item1, dims.Item2, (i, j) => ar[i * dims.Item2 + j]);
-			UtilsDiff.calculateDifference(adapter, unDiff, xMin, yMin, stepX, stepY, funcAnalitic, ref fMin, ref fMax, canceled, reportProgress);
+			UtilsDiff<T>.calculateDifference(adapter, unDiff, xMin, yMin, stepX, stepY, funcAnalitic, ref fMin, ref fMax, canceled, reportProgress);
 		}
 
 		virtual public string getElapsedInfo() { return null; }

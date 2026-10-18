@@ -56,16 +56,16 @@ namespace VLP2D.Model
 					bndB[i] = (funcBottom != null) ? funcBottom(x) : funcBorder(x, yMin);
 					bndT[i] = (funcTop != null) ? funcTop(x) : funcBorder(x, yMax);
 
-					UtilsDiff.updateMinMax(bndB[i], ref fMin[core], ref fMax[core]);
-					UtilsDiff.updateMinMax(bndT[i], ref fMin[core], ref fMax[core]);
+					UtilsDiff<T>.updateMinMax(bndB[i], ref fMin[core], ref fMax[core]);
+					UtilsDiff<T>.updateMinMax(bndT[i], ref fMin[core], ref fMax[core]);
 
 					x += incX;
 				}
 			});
 			for (int i = 0; i < cLoop; i++)
 			{
-				UtilsDiff.updateMinMax(fMin[i], ref valMin, ref valMax);
-				UtilsDiff.updateMinMax(fMax[i], ref valMin, ref valMax);
+				UtilsDiff<T>.updateMinMax(fMin[i], ref valMin, ref valMax);
+				UtilsDiff<T>.updateMinMax(fMax[i], ref valMin, ref valMax);
 			}
 			unLB = (funcBottom != null) ? funcBottom(xMin) : funcBorder(xMin, yMin);//or funcLeft(yMin)
 			unLT = (funcTop != null) ? funcTop(xMin) : funcBorder(xMin, yMax);//or funcLeft(yMax)
@@ -90,16 +90,16 @@ namespace VLP2D.Model
 					bndL[j] = (funcLeft != null) ? funcLeft(y) : funcBorder(xMin, y);
 					bndR[j] = (funcRight != null) ? funcRight(y) : funcBorder(xMax, y);
 
-					UtilsDiff.updateMinMax(bndL[j], ref fMin[core], ref fMax[core]);
-					UtilsDiff.updateMinMax(bndR[j], ref fMin[core], ref fMax[core]);
+					UtilsDiff<T>.updateMinMax(bndL[j], ref fMin[core], ref fMax[core]);
+					UtilsDiff<T>.updateMinMax(bndR[j], ref fMin[core], ref fMax[core]);
 
 					y += incY;
 				}
 			});
 			for (int i = 0; i < cLoop; i++)
 			{
-				UtilsDiff.updateMinMax(fMin[i], ref valMin, ref valMax);
-				UtilsDiff.updateMinMax(fMax[i], ref valMin, ref valMax);
+				UtilsDiff<T>.updateMinMax(fMin[i], ref valMin, ref valMax);
+				UtilsDiff<T>.updateMinMax(fMax[i], ref valMin, ref valMax);
 			}
 		}
 
@@ -115,7 +115,7 @@ namespace VLP2D.Model
 				{
 					for (int j = 0; j <= Ny; j++)
 					{
-						UtilsDiff.updateMinMax(un[i * (Ny + 1) + j], ref fMin[core], ref fMax[core]);
+						UtilsDiff<T>.updateMinMax(un[i * (Ny + 1) + j], ref fMin[core], ref fMax[core]);
 					}
 				}
 			});
@@ -143,7 +143,7 @@ namespace VLP2D.Model
 		{
 			if (un == null) return;
 			Adapter2D<T> adapter = new Adapter2D<T>(Nx + 1, Ny + 1, (i, j) => un[i * (Ny + 1) + j]);
-			UtilsDiff.calculateDifference(adapter, unDiff, xMin, yMin, stepX, stepY, funcAnalitic, ref valMin, ref valMax, canceled, reportProgress);
+			UtilsDiff<T>.calculateDifference(adapter, unDiff, xMin, yMin, stepX, stepY, funcAnalitic, ref valMin, ref valMax, canceled, reportProgress);
 		}
 
 		public void initInitialIterationValue(T val) { }

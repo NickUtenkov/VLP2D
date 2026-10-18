@@ -16,6 +16,14 @@ namespace VLP2D.Common
 			});
 		}
 
+		public static void iterate(int fromInclusive, int toInclusive, Action<int> action)
+		{
+			Parallel.For(fromInclusive, toInclusive + 1, optionsParallel, (i, loopState) =>
+			{
+				action(i);
+			});
+		}
+
 		public static void iterate(int lowerX, int upperX, int lowerY, int upperY, Action<int, int> func)
 		{
 			Parallel.For(lowerX, upperX, optionsParallel, i =>

@@ -70,7 +70,7 @@ namespace VLP2D.Model
 
 			initFj(un);
 
-			for (int i = 1; i < N1; i++)
+			for (int i = 1; i <= N1 - 1; i++)
 			{
 				Parallel.For(0, cCores, GridIterator.optionsParallel, k => { for (int j = 0; j < N2 - 1; j++) vkSum[k][j] = T.Zero; });
 				for (int j = 1; j < N2; j++) un[i][j] += un[i - 1][j];//Fj + beta(j)(beta is zero-based),[SNR] p.117 (40)
@@ -80,7 +80,7 @@ namespace VLP2D.Model
 				if ((rem1 > 0) && (i % rem1 == 0)) showProgress();
 			}
 
-			for (int i = N1 - 1; i > 0; i--)
+			for (int i = N1 - 1; i >= 1; i--)
 			{
 				Parallel.For(0, cCores, GridIterator.optionsParallel, k => { for (int j = 0; j < N2 - 1; j++) vkSum[k][j] = (k == 0) ? un[i][j + 1] : T.Zero; });
 				matrixAjMultiplyVectorUsingProgonka(i, 1);//[SNR] p.117 (41)
@@ -101,17 +101,17 @@ namespace VLP2D.Model
 			int rightHandSideRow = resultRow + deltaRow;
 			T _jOrI = T.CreateTruncating(jOrI);
 
-			Parallel.For(0, cCores, GridIterator.optionsParallel, (j, loopState) =>
+			Parallel.For(0, cCores, GridIterator.optionsParallel, (core, loopState) =>
 			{
 				if (loopState.IsStopped) return;
-				for (int k = j + 1; k < jOrI; k += cCores)
+				for (int k = core + 1; k < jOrI; k += cCores)
 				{
 					(T sin, T cos) = T.SinCosPi(T.CreateTruncating(k) / _jOrI);
 					T diagElem = (cBase - cos * _2) / subsupra;//[SNR] p.119, (49), left side
 					T akj = sin * sin * _2 / _jOrI / subsupra;//[SNR] p.119, (48)
-					int kUp = calcAlpha(alfa[j], diagElem);
-					progonka((i) => akj * un[rightHandSideRow][i + 1], vk[j], alfa[j], diagElem, kUp);//akj * res[...] is [SNR] p.119, (49), right side
-					for (int i = 0; i < N2 - 1; i++) vkSum[j][i] += vk[j][i];
+					int kUp = calcAlpha(alfa[core], diagElem);
+					progonka((i) => akj * un[rightHandSideRow][i + 1], vk[core], alfa[core], diagElem, kUp);//akj * res[...] is [SNR] p.119, (49), right side
+					for (int i = 0; i < N2 - 1; i++) vkSum[core][i] += vk[core][i];
 
 					if (iterationsCanceled)
 					{

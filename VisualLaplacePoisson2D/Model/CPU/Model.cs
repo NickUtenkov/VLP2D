@@ -128,7 +128,7 @@ namespace VLP2D.Model
 						Adapter2D<double> adapter = new Adapter2D<double>(dim1, dim2, (i, j) => uu[i, j]);
 						double xMin = double.CreateTruncating(rectData.xMin);
 						double yMin = double.CreateTruncating(rectData.yMin);
-						UtilsDiff.calculateDifference<double>(adapter, unDiffLocal, xMin, yMin , newStepX, newStepY, compiledFuncsFloat.pFuncAnalytic, ref fMinDiffLocal, ref fMaxDiffLocal, null, null);
+						UtilsDiff<double>.calculateDifference(adapter, unDiffLocal, xMin, yMin , newStepX, newStepY, compiledFuncsFloat.pFuncAnalytic, ref fMinDiffLocal, ref fMaxDiffLocal, null, null);
 						BitmapSource bmsDiff = fCreateBitmapDiff(new MinMaxF(fMinDiffLocal, fMaxDiffLocal), new Adapter2D<float>(dim1, dim2, (i, j) => (float)unDiffLocal[i][j]));
 						if (bmsDiff != null) lstBitmapDiff.Add(bmsDiff);
 					}
