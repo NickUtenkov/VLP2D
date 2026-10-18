@@ -1,4 +1,5 @@
-﻿using ELW.Library.Math.Tools;
+﻿using ELW.Library.Math;
+using ELW.Library.Math.Tools;
 using System;
 using System.Numerics;
 using VLP2D.Common;
@@ -47,20 +48,47 @@ namespace VLP2D.Model
 			get { return calculatorAnalytic != null ? calculatorAnalytic.Calculate : (Func<T, T, T>)null; }
 		}
 
-		public CompiledFunctions(string strFuncLeft, string strFuncRight, string strFuncTop, string strFuncBottom, string strFuncKsi, string strFuncBoundary, string strFuncAnalytic, bool bCompile = false)
+		public CompiledFunctions(TaskInputParams pParams, bool bCompile = false)
 		{
+			if (pParams == null) return;
 			Utils.addCustomFunctions<T>();
 
 			string strErr;
 
-			calculatorLeft = createCalculator1(strFuncLeft, "funcLeft ");
-			calculatorRight = createCalculator1(strFuncRight, "funcRight ");
-			calculatorTop = createCalculator1(strFuncTop, "funcTop ");
-			calculatorBottom = createCalculator1(strFuncBottom, "funcBottom ");
+			calculatorLeft = createCalculator1(pParams.funcLeft, "funcLeft ");
+			calculatorRight = createCalculator1(pParams.funcRight, "funcRight ");
+			calculatorTop = createCalculator1(pParams.funcTop, "funcTop ");
+			calculatorBottom = createCalculator1(pParams.funcBottom, "funcBottom ");
 
-			calculatorBoundary = createCalculator2(strFuncBoundary, "funcBoundary ");
-			calculatorKsi = createCalculator2(strFuncKsi, "funcRHS ");
-			calculatorAnalytic = createCalculator2(strFuncAnalytic, "funcAnalytic ");
+			calculatorBoundary = createCalculator2(pParams.funcBoundary, "funcBoundary ");
+			calculatorKsi = createCalculator2(pParams.fKsi, "funcRHS ");
+
+			if (pParams.series1Function != null)
+			{
+				try
+				{
+					CalculatorSumIXY<T> calcSum1 = new CalculatorSumIXY<T>(pParams.series1IndexMin, pParams.series1IndexMax, pParams.series1Step, pParams.series1Multiplier, pParams.series1Function, bCompile, GridIterator.optionsParallel);
+					ToolsHelper<T>.OperationsRegistry.addFunctionAfterRegistryInit("sumIXY", ["sumIXY"], 2, calcSum1);
+				}
+				catch (Exception ex)
+				{
+					strErrors += ex.Message + "\n";
+				}
+			}
+
+			if (pParams.series2Function != null)
+			{
+				try
+				{
+					CalculatorSumIJXY<T> calcSum2 = new CalculatorSumIJXY<T>(pParams.series2IndexMin, pParams.series2IndexMax, pParams.series2Step, pParams.series2Multiplier, pParams.series2Function, bCompile, GridIterator.optionsParallel);
+					ToolsHelper<T>.OperationsRegistry.addFunctionAfterRegistryInit("sumIJXY", ["sumIJXY"], 2, calcSum2);
+				}
+				catch (Exception ex)
+				{
+					strErrors += ex.Message + "\n";
+				}
+			}
+			calculatorAnalytic = createCalculator2(pParams.funcAnalytic, "funcAnalytic ");//call after adding sum1, sum2
 
 			if (strErrors.Length > 0) System.Windows.MessageBox.Show(strErrors, Resources.strExpressionError);
 

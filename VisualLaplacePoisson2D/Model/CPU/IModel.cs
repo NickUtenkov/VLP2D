@@ -114,7 +114,7 @@ namespace VLP2D.Model
 		void changeVisualParams(bool visualize, int stepHeatMap);
 		void setMaxIterations(int maxIterations);
 		string stringFunctionExpressionErrors();
-		void allIterations();
+		void runBackgroundWorker();
 		void cancelAll();
 		int getElapsedIters();
 		int getAllIters();

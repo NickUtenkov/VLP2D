@@ -843,7 +843,7 @@ namespace VLP2D.ViewModel
 				if (_precisionSelectedIndex == value) return;
 				_precisionSelectedIndex = value;
 				RaisePropertyChangedEvent("precisionSelectedIndex");
-				output?.changeModelPrecision(_precisionSelectedIndex);
+				output?.createModelWithPrecision(_precisionSelectedIndex);
 				if (output != null) countIterations = output.getModelMaxIterations(getPlatformAndSchemeIndex(), currentParams, getInterpolationIndex());
 				if (showLParamSlider)
 				{

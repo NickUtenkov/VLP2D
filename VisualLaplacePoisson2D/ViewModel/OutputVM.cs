@@ -38,7 +38,7 @@ namespace VLP2D.ViewModel
 		BitmapSource createHeatMapDiff(MinMaxF minMax, Adapter2D<float> adapter, int width, int height)
 		{
 			scaleYDif = ((double)height / (double)width) * ((double)adapter.dim1 / (double)adapter.dim2);
-			BitmapSource rc = UtilsPict.createHeatMap(palNoPurple, minMax, adapter);
+			BitmapSource rc = UtilsPict.createHeatMap(palNoPurpleWithTransparent, minMax, adapter);
 			heatMapDiff = rc;
 			return rc;
 		}
@@ -124,7 +124,6 @@ namespace VLP2D.ViewModel
 			listMapDiff.Clear();
 			modelSurface = null;
 			picture3D.reset();
-			progressValue = 0;
 
 			var widthHeight = calculateWidthHeight(rdd.cXSegments, rdd.stepX, rdd.cYSegments, rdd.stepY);
 			BitmapSource funcIHM(bool palWithTransparent, MinMaxF minMax, Adapter2D<float> adapter) => createInterpolatedHeatMap(palWithTransparent, minMax, adapter, (float)rdd.stepX, (float)rdd.stepY, widthHeight.Item1, widthHeight.Item2);
@@ -188,7 +187,7 @@ namespace VLP2D.ViewModel
 
 			saveTaskParams();
 
-			pModel.allIterations();
+			pModel.runBackgroundWorker();
 		}
 
 		void saveTaskParams()
@@ -227,6 +226,7 @@ namespace VLP2D.ViewModel
 		void completedEventHandler()
 		{
 			bShowProgress = false;
+			progressValue = 0;
 
 			sliderTicks = listMap.Count - 1;
 			sliderLargeChange = sliderTicks / 20.0;
@@ -610,7 +610,7 @@ namespace VLP2D.ViewModel
 			picture3D = new Picture3D();
 		}
 
-		public void changeModelPrecision(int indexPrecision)
+		public void createModelWithPrecision(int indexPrecision)
 		{
 			pModel?.removeProgressHandler(progressEventHandler);
 			pModel?.removeProgressHeaderHandler(progressHeaderEventHandler);
@@ -660,7 +660,7 @@ namespace VLP2D.ViewModel
 		void setModelMethodsParams();
 		void changeModelMultiThread(bool isMultiThread);
 		void changeModelVisualParams(bool visualize, int stepHeatMap);
-		void changeModelPrecision(int indexPrecision);
+		void createModelWithPrecision(int indexPrecision);
 		int getModelMaxIterations(PlatformAndSchemeIndex platformScheme, TaskInputParams pParams, InterpolationEnum idxInterpolation);
 		void setModelIterations(int iters);
 		void compileModelFunctions(TaskInputParams pParams);

@@ -61,9 +61,14 @@ namespace VLP2D.Common
 						T val = adapter.func(i, j);
 						if (!T.IsNaN(val))
 						{
-							T diff = adapter.func(i, j) - funcAnalitic(x, y);
-							unDiff[i][j] = diff;
-							updateMinMax(diff, ref fMin[core], ref fMax[core]);
+							T valAnalitic = funcAnalitic(x, y);
+							if (!T.IsNaN(valAnalitic))
+							{
+								T diff = adapter.func(i, j) - valAnalitic;
+								unDiff[i][j] = diff;
+								updateMinMax(diff, ref fMin[core], ref fMax[core]);
+							}
+							else unDiff[i][j] = valAnalitic;
 						}
 						else unDiff[i][j] = val;
 						if ((canceled != null) && (j % 10 == 0) && canceled()) goto exitLoop;

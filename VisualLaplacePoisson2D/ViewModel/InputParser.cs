@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows;
+using System.Windows.Input;
 using VLP2D.Model;
 using VLP2D.Properties;
 
@@ -27,7 +28,7 @@ namespace VLP2D.ViewModel
 		string[] keysBoundaries1 = { "funcLeft", "funcRight", "funcTop", "funcBottom" };
 		string[] keysBoundaries2 = { "funcBoundary" };
 
-		string[] keysOptional = { "funcRHS", "funcAnalytic" };
+		string[] keysOptional = { "funcRHS", "funcAnalytic", "series2Function", "series2Multiplier", "series2IndexMin", "series2IndexMax", "series2Step", "series1Function", "series1Multiplier", "series1IndexMin", "series1IndexMax", "series1Step" };
 		string[] keysOptionalOCL = { "SimpleIterationOCL", "SlidingIterationOCL", "SOROCL", "SplittingOCL", "VarDirOCL", "MultiGridOCL" };
 		string[] keysOptionalCUDA = { "SimpleIterationCUDA", "SlidingIterationCUDA", "SORCUDA", "SplittingCUDA", "VarDirCUDA", "MultiGridCUDA" };
 
@@ -110,10 +111,26 @@ namespace VLP2D.ViewModel
 				string funcBoundary = replaceMaxes("funcBoundary");
 				string funcAnalytic = replaceMaxes("funcAnalytic");
 
+				string series2Function = replaceMaxes("series2Function");
+				string series2Multiplier = replaceMaxes("series2Multiplier");
+				string series2IndexMin = dict.GetValueOrDefault("series2IndexMin");
+				string series2IndexMax = dict.GetValueOrDefault("series2IndexMax");
+				string series2Step = dict.GetValueOrDefault("series2Step");
+
+				string series1Function = replaceMaxes("series1Function");
+				string series1Multiplier = replaceMaxes("series1Multiplier");
+				string series1IndexMin = dict.GetValueOrDefault("series1IndexMin");
+				string series1IndexMax = dict.GetValueOrDefault("series1IndexMax");
+				string series1Step = dict.GetValueOrDefault("series1Step");
+
 				if (strErrors.Count == 0)
 				{
 					string name = Path.GetFileNameWithoutExtension(filePath);
-					parsedParams = new TaskInputParams(dict["xMin"], dict["yMin"], dict["xMax"], dict["yMax"], segmentsX, segmentsY, itersCPU, itersOCL, itersCUDA, dictEpsilon, RHS, fLeft, fRight, fTop, fBottom, funcBoundary, funcAnalytic, name);
+					parsedParams = new TaskInputParams(dict["xMin"], dict["yMin"], dict["xMax"], dict["yMax"], segmentsX, segmentsY, itersCPU, itersOCL,
+						itersCUDA, dictEpsilon, RHS, fLeft, fRight, fTop, fBottom, funcBoundary, funcAnalytic,
+						series1Function, series1Multiplier, series1IndexMin, series1IndexMax, series1Step,
+						series2Function, series2Multiplier, series2IndexMin, series2IndexMax, series2Step,
+						name);
 				}
 			}
 			if (strErrors.Count > 0)

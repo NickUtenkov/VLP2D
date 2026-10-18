@@ -13,9 +13,7 @@ namespace VLP2D.Common
 
 		static public T[] calculateTau(T eps, T hx2, T hy2, T lengthX, T lengthY)
 		{
-			T[] lambda_max, lambda_min;
-			T conditioning;
-			(lambda_max, lambda_min, conditioning) = spectrumEstimates(hx2, hy2, lengthX, lengthY);
+			(T[] lambda_max, T[] lambda_min, T conditioning) = spectrumEstimates(hx2, hy2, lengthX, lengthY);
 			T epsilon_background = T.CreateTruncating(UtilsEps.epsilon<T>()) * conditioning;//can use UtilsEps.epsilonBackground<T>()
 			T eps_grid_sys = eps;
 			T epsilon = T.Max(epsilon_background, eps_grid_sys);

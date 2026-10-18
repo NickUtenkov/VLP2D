@@ -1,13 +1,18 @@
 ﻿using ELW.Library.Math;
 using ELW.Library.Math.Calculators;
+using ELW.Library.Math.Tools;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq.Expressions;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using static VLP2D.Common.Utils;
 
 namespace VLP2D.Common
 {
@@ -359,18 +364,193 @@ namespace VLP2D.Common
 			return Path.Combine(strFoler, "VLP2D_Data");
 		}
 
+		static public T calculateSumIX<T>(int idxMin, int idxMax, int step, T multiplier, Func<T, T, T> func, T x, ParallelOptions optionsParallel) where T : INumber<T>
+		{
+			int cLoop = Math.Min(idxMax - (idxMin - 1), optionsParallel.MaxDegreeOfParallelism);
+			T[] partialSum = new T[cLoop];
+			Array.Fill(partialSum, T.Zero);
+
+			Parallel.For(0, cLoop, optionsParallel, (core) =>
+			{
+				for (int i = idxMin + core * step; i <= idxMax; i += cLoop * step)
+				{
+					T val = func(T.CreateTruncating(i), x);
+					if (!T.IsNaN(val)) partialSum[core] += val;
+				}
+			});
+
+			T sum = T.Zero;
+			for (int i = 0; i < cLoop; i++) sum += partialSum[i];
+			sum *= multiplier;
+
+			return sum;
+		}
+
+		static public T calculateSumIXY<T>(int idxMin, int idxMax, int step, T multiplier, Func<T, T, T, T> func, T x, T y, ParallelOptions optionsParallel) where T : INumber<T>
+		{
+			int cLoop = Math.Min(idxMax - (idxMin - 1), optionsParallel.MaxDegreeOfParallelism);
+			T[] partialSum = new T[cLoop];
+			Array.Fill(partialSum, T.Zero);
+
+			Parallel.For(0, cLoop, optionsParallel, (core) =>
+			{
+				for (int i = idxMin + core * step; i <= idxMax; i += cLoop * step)
+				{
+					T val = func(T.CreateTruncating(i), x, y);
+					if (!T.IsNaN(val)) partialSum[core] += val;
+				}
+			});
+
+			T sum = T.Zero;
+			for (int i = 0; i < cLoop; i++) sum += partialSum[i];
+			sum *= multiplier;
+
+			return sum;
+		}
+
+		static public T calculateSumIJXY<T>(int idxMin, int idxMax, int step, T multiplier, Func<T, T, T, T, T> func, T x, T y, ParallelOptions optionsParallel) where T : INumber<T>
+		{
+			int cLoop = Math.Min(idxMax - (idxMin - 1), optionsParallel.MaxDegreeOfParallelism);
+			T[] partialSum = new T[cLoop];
+			Array.Fill(partialSum, T.Zero);
+
+			Parallel.For(0, cLoop, optionsParallel, (core) =>
+			{
+				for (int i = idxMin + core * step; i <= idxMax; i += cLoop * step)
+				{
+					for (int j = idxMin; j <= idxMax; j += step)
+					{
+						T val = func(T.CreateTruncating(i), T.CreateTruncating(j), x, y);
+						if (!T.IsNaN(val)) partialSum[core] += val;
+					}
+				}
+			});
+
+			T sum = T.Zero;
+			for (int i = 0; i < cLoop; i++) sum += partialSum[i];
+			sum *= multiplier;
+
+			return sum;
+		}
+
 		public static void addCustomFunctions<T>() where T : unmanaged, INumber<T>, ITrigonometricFunctions<T>, ILogarithmicFunctions<T>, IRootFunctions<T>, IMinMaxValue<T>, IPowerFunctions<T>, IExponentialFunctions<T>, IHyperbolicFunctions<T>
 		{
-			//already added to ELW
-			//ToolsHelper<T>.OperationsRegistry.addFunctionAfterRegistryInit("pi", ["pi"], 1, new CalculatorPi<T>());
 		}
 	}
 
-	/*internal sealed class CalculatorPi<T> : IOperationCalculator<T> where T : INumber<T>, IFloatingPointConstants<T>
+	public class CalculatorSumBase<T> where T : unmanaged, INumber<T>, IPowerFunctions<T>, ITrigonometricFunctions<T>, IExponentialFunctions<T>, ILogarithmicFunctions<T>, IHyperbolicFunctions<T>
 	{
+		protected T seriesMultiplier;
+		protected int seriesIndexMin, seriesIndexMax, seriesStep;
+
+		public CalculatorSumBase(string strSeriesIndexMin, string strSeriesIndexMax, string strSeriesStep, string strSeriesMultiplier)
+		{
+			string strErr;
+			Calculator0D<T> calculator = new Calculator0D<T>();
+
+			if (strSeriesMultiplier != null)
+			{
+				strErr = calculator.setExpression(strSeriesMultiplier);
+				if (strErr != null) throw new Exception(strErr);
+				seriesMultiplier = calculator.Calculate();
+			}
+			else seriesMultiplier = T.One;
+			if (strSeriesIndexMin != null)
+			{
+				strErr = calculator.setExpression(strSeriesIndexMin);
+				if (strErr != null) throw new Exception(strErr);
+				seriesIndexMin = (int)uint.CreateTruncating(calculator.Calculate());
+			}
+			else seriesIndexMin = 1;
+			if (strSeriesIndexMax != null)
+			{
+				strErr = calculator.setExpression(strSeriesIndexMax);
+				if (strErr != null) throw new Exception(strErr);
+				seriesIndexMax = (int)uint.CreateTruncating(calculator.Calculate());
+			}
+			else seriesIndexMax = 10;
+			if (strSeriesStep != null)
+			{
+				strErr = calculator.setExpression(strSeriesStep);
+				if (strErr != null) throw new Exception(strErr);
+				seriesStep = (int)uint.CreateTruncating(calculator.Calculate());
+			}
+			else seriesStep = 1;
+		}
+	}
+
+	public class CalculatorSumIX<T> : CalculatorSumBase<T>, IOperationCalculator<T> where T : unmanaged, INumber<T>, IPowerFunctions<T>, ITrigonometricFunctions<T>, IExponentialFunctions<T>, ILogarithmicFunctions<T>, IHyperbolicFunctions<T>
+	{
+		Func<T, T, T> seriesFunction;//series common member
+		Expression<Func<T, T>> funcExpression;
+		Func<T, T> funcSum;
+
+		public CalculatorSumIX(string strSeriesIndexMin, string strSeriesIndexMax, string strSeriesStep, string strSeriesMultiplier, string strSeriesFunction, bool bCompile, ParallelOptions optionsParallel)
+			: base(strSeriesIndexMin, strSeriesIndexMax, strSeriesStep, strSeriesMultiplier)
+		{
+			Calculator2D<T> calculator2 = new Calculator2D<T>();
+			string strErr = calculator2.setExpression(strSeriesFunction, "i", bCompile);
+			if (strErr != null) throw new Exception(strErr);
+			seriesFunction = calculator2.Calculate;
+
+			funcSum = (x) => calculateSumIX(seriesIndexMin, seriesIndexMax, seriesStep, seriesMultiplier, seriesFunction, x, optionsParallel);
+			funcExpression = (x) => funcSum(x);
+		}
+
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public T calculate(Span<T> items, int idx) => T.Pi * (items[idx + 0]);
+		public T calculate(Span<T> items, int idx) => funcSum(items[idx + 0]);
+
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public Expression expression(Expression[] items, int idx) => Expression.Multiply(Expression.Constant(T.Pi, typeof(T)), items[idx + 0]);
-	}*/
+		public Expression expression(Expression[] items, int idx) => Expression.Invoke(funcExpression, items[idx + 0]);
+	}
+
+	public class CalculatorSumIXY<T> : CalculatorSumBase<T>, IOperationCalculator<T> where T : unmanaged, INumber<T>, IPowerFunctions<T>, ITrigonometricFunctions<T>, IExponentialFunctions<T>, ILogarithmicFunctions<T>, IHyperbolicFunctions<T>
+	{
+		Func<T, T, T, T> seriesFunction;//series common member
+		Expression<Func<T, T, T>> funcExpression;
+		Func<T, T, T> funcSum;
+
+		public CalculatorSumIXY(string strSeriesIndexMin, string strSeriesIndexMax, string strSeriesStep, string strSeriesMultiplier, string strSeriesFunction, bool bCompile, ParallelOptions optionsParallel)
+			: base(strSeriesIndexMin, strSeriesIndexMax, strSeriesStep, strSeriesMultiplier)
+		{
+			Calculator3D<T> calculator3 = new Calculator3D<T>();
+			string strErr = calculator3.setExpression(strSeriesFunction, "i", "x", bCompile);
+			if (strErr != null) throw new Exception(strErr);
+			seriesFunction = calculator3.Calculate;
+
+			funcSum = (x, y) => calculateSumIXY(seriesIndexMin, seriesIndexMax, seriesStep, seriesMultiplier, seriesFunction, x, y, optionsParallel);
+			funcExpression = (x, y) => funcSum(x, y);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public T calculate(Span<T> items, int idx) => funcSum(items[idx + 0], items[idx + 1]);
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public Expression expression(Expression[] items, int idx) => Expression.Invoke(funcExpression, items[idx + 0], items[idx + 1]);
+	}
+
+	public class CalculatorSumIJXY<T> : CalculatorSumBase<T>, IOperationCalculator<T> where T : unmanaged, INumber<T>, IPowerFunctions<T>, ITrigonometricFunctions<T>, IExponentialFunctions<T>, ILogarithmicFunctions<T>, IHyperbolicFunctions<T>
+	{
+		Func<T, T, T, T, T> seriesFunction;//series common member
+		Expression<Func<T, T, T>> funcExpression;
+		Func<T, T, T> funcSum;
+
+		public CalculatorSumIJXY(string strSeriesIndexMin, string strSeriesIndexMax, string strSeriesStep, string strSeriesMultiplier, string strSeriesFunction, bool bCompile, ParallelOptions optionsParallel)
+			: base(strSeriesIndexMin, strSeriesIndexMax, strSeriesStep, strSeriesMultiplier)
+		{
+			Calculator4D<T> calculator4 = new Calculator4D<T>();
+			string strErr = calculator4.setExpression(strSeriesFunction, "i", "j", "x", bCompile);
+			if (strErr != null) throw new Exception(strErr);
+			seriesFunction = calculator4.Calculate;
+
+			funcSum = (x, y) => calculateSumIJXY(seriesIndexMin, seriesIndexMax, seriesStep, seriesMultiplier, seriesFunction, x, y, optionsParallel);
+			funcExpression = (x, y) => funcSum(x, y);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public T calculate(Span<T> items, int idx) => funcSum(items[idx + 0], items[idx + 1]);
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public Expression expression(Expression[] items, int idx) => Expression.Invoke(funcExpression, items[idx + 0], items[idx + 1]);
+	}
 }

@@ -83,14 +83,11 @@ namespace VLP2D.Model
 			return rdd;
 		}
 
-		public void setMaxIterations(int maxIterations)
-		{
-			maxIters = maxIterations;
-		}
+		public void setMaxIterations(int maxIterations) => maxIters = maxIterations;
 
 		public void compileFunctions(TaskInputParams pParams)
 		{
-			compiledFuncs = new CompiledFunctions<T>(pParams.funcLeft, pParams.funcRight, pParams.funcTop, pParams.funcBottom, pParams.fKsi, pParams.funcBoundary, pParams.funcAnalytic, true);
+			compiledFuncs = new CompiledFunctions<T>(pParams, true);
 			pFuncLeft = compiledFuncs.pFuncLeft;
 			pFuncRight = compiledFuncs.pFuncRight;
 			pFuncTop = compiledFuncs.pFuncTop;
@@ -115,7 +112,7 @@ namespace VLP2D.Model
 
 			if (methodParams.isCompareAnalytic)
 			{
-				CompiledFunctions<double> compiledFuncsFloat = new CompiledFunctions<double>(null, null, null, null, null, null, pParams.funcAnalytic);
+				CompiledFunctions<double> compiledFuncsFloat = new CompiledFunctions<double>(pParams, true);
 
 				if (compiledFuncsFloat.pFuncAnalytic != null)
 				{
@@ -192,7 +189,7 @@ namespace VLP2D.Model
 
 		double[,] createInitialBitmap(TaskInputParams pParams, InterpolationEnum idxInterpolation,ref float newStepX, ref float newStepY)
 		{
-			CompiledFunctions<double> compiledFuncsFloat = new CompiledFunctions<double>(pParams.funcLeft, pParams.funcRight, pParams.funcTop, pParams.funcBottom, null, pParams.funcBoundary, null);
+			CompiledFunctions<double> compiledFuncsFloat = new CompiledFunctions<double>(pParams, true);
 			Func<double, double> pFuncLeftFloat, pFuncRightFloat, pFuncTopFloat, pFuncBottomFloat;
 			Func<double, double, double> pFuncBoundaryFloat;
 			pFuncLeftFloat = compiledFuncsFloat.pFuncLeft;
@@ -494,7 +491,7 @@ namespace VLP2D.Model
 			stepHeatMap = stepHeatMap1;
 		}
 
-		public void allIterations()
+		public void runBackgroundWorker()
 		{
 			if (worker != null) return;
 			bCancelAllIterations = false;
@@ -673,7 +670,7 @@ namespace VLP2D.Model
 			scheme?.cancelIterations();//can be null if long time constructors
 		}
 
-		void reportProgress(double perc)//for complete reduction
+		void reportProgress(double perc)
 		{
 			percentage = perc;
 			worker.ReportProgress(0);//will be used above value

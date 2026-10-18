@@ -45,6 +45,8 @@ namespace VLP2D.Model
 
 			alphaX = new T[cXSegments];
 			alphaY = new T[cYSegments];
+			alphaX[0] = T.Zero;
+			alphaY[0] = T.Zero;
 
 			bool isPoisson = fKsi != null;
 			if (isPoisson)
@@ -128,11 +130,7 @@ namespace VLP2D.Model
 
 		protected void calcAlpha(T bx, T by)
 		{
-			Action<T, T[], int> calc = (diag, alpha, bound) =>
-			{
-				alpha[0] = T.Zero;
-				for (int i = 1; i <= bound; i++) alpha[i] = T.One / (diag - alpha[i - 1]);
-			};
+			Action<T, T[], int> calc = (diag, alpha, bound) => { for (int i = 1; i <= bound; i++) alpha[i] = T.One / (diag - alpha[i - 1]); };
 
 			kX = αCC.upperBound(bx, cXSegments - 1);
 			kY = αCC.upperBound(by, cYSegments - 1);

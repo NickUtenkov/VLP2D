@@ -14,7 +14,8 @@ namespace VLP2D.View
 				iVM.setOutput(oVM);
 				oVM.setInput(iVM);
 
-				oVM.changeModelPrecision(iVM.precisionIndex());
+				oVM.createModelWithPrecision(iVM.precisionIndex());
+				oVM.changeModelMultiThread(iVM.shouldMultiThread());
 			}
 		}
 	}
